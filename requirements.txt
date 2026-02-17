@@ -1,0 +1,7 @@
+﻿numpy
+pandas
+scikit-learn
+scipy
+matplotlib
+tqdm
+joblib
