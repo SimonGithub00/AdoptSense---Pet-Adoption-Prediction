@@ -9,72 +9,73 @@ Full end-to-end ML pipeline (Tabular → +NLP (optional) → +Image/Meta (option
 VS Code → **Terminal → New Terminal**
 
 ### 2) Clone the repo
-
+```bash
 git clone <YOUR_GITHUB_REPO_URL>
 cd <REPO_NAME>
-
+code .
+```
 
 ### 3) Create a virtual environment (venv) — when and why
 **When:** right after cloning (and anytime `requirements.txt` changes).  
 **Why:** isolates Python packages per project so everyone avoids global conflicts and keeps installs consistent.
 
 Create venv:
-
+```bash
 python -m venv .venv
-
+```
 
 Activate venv:
 
 **macOS / Linux**
-
+```bash
 source .venv/bin/activate
-
+```
 
 **Windows (PowerShell)**
-
+```powershell
 .\.venv\Scripts\Activate.ps1
+```
 
-
-Install dependencies (takes a while the very first time):
-
+Install dependencies:
+```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-
+```
 
 ---
 
 ## Daily coding workflow (team rules)
 
 ### 1) Always start by syncing with `main`
-
+```bash
 git checkout main
 git pull
-
+```
 
 ### 2) Create a new branch for your work
 Use a short descriptive name:
-
+```bash
 git checkout -b feat/<short-topic>
-
+```
 
 Examples:
-
+```bash
 git checkout -b feat/tabular-baseline
 git checkout -b feat/text-features
 git checkout -b feat/meta-features
-
+```
 
 ### 3) Code + commit often
-
+```bash
 git status
 git add .
 git commit -m "Short message describing change"
-
+```
 
 ### 4) Push your branch
-
+```bash
 git push -u origin feat/<short-topic>
-
+```
 
 ### 5) Open a Pull Request (PR)
 On GitHub: create a PR from your branch into `main`.
@@ -86,25 +87,25 @@ PR description should include:
 ### 6) Wait for approval, then merge
 - At least **1 teammate approval** before merge
 - After merge, update your local `main`:
-
+```bash
 git checkout main
 git pull
-
+```
 
 ### 7) If `main` changed while you worked (simple approach)
 Merge `main` into your branch before final PR:
-
+```bash
 git checkout feat/<short-topic>
 git merge main
 git push
-
+```
 
 ---
 
 ## Project structure
 
 ### Repo structure
-
+```text
 adoptsense/
 ├─ README.md
 ├─ .gitignore
@@ -120,11 +121,11 @@ adoptsense/
    ├─ model_trainer.py
    ├─ evaluator.py
    └─ run.py
-
+```
 
 ### Kaggle data structure (local only)
 Place the Kaggle competition files here (do NOT commit):
-
+```text
 data/raw/
 ├─ train/
 │  ├─ train.csv
@@ -140,7 +141,7 @@ data/raw/
 ├─ breed_labels.csv
 ├─ color_labels.csv
 └─ state_labels.csv
-
+```
 
 ---
 
@@ -179,6 +180,6 @@ Prints metrics and can save minimal artifacts (optional: predictions, `metrics.j
 ## Notes
 - Do not commit anything under `data/`.
 - If `requirements.txt` changes, re-run:
-
+```bash
 pip install -r requirements.txt
-
+```
