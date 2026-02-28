@@ -106,21 +106,39 @@ git push
 
 ### Repo structure
 ```text
-adoptsense/
+AdoptSense-Pet-Adoption-Prediction/
 ├─ README.md
 ├─ .gitignore
 ├─ requirements.txt
-├─ data/                  # ignored (Kaggle files stay local)
+├─ LICENSE
+├─ petadoption_run.ipynb
+├─ data/                         # ignored (Kaggle files stay local)
+│  ├─ train/
+│  │  └─ train.csv
+│  ├─ test/
+│  │  └─ test.csv
+│  ├─ train_images/
+│  ├─ test_images/
+│  ├─ train_metadata/
+│  ├─ test_metadata/
+│  ├─ train_sentiment/
+│  ├─ test_sentiment/
+│  ├─ sample_submission.csv
+│  ├─ breed_labels.csv
+│  ├─ BreedLabels.csv
+│  ├─ PetFinder-BreedLabels.csv
+│  ├─ color_labels.csv
+│  ├─ ColorLabels.csv
+│  ├─ PetFinder-ColorLabels.csv
+│  ├─ state_labels.csv
+│  ├─ StateLabels.csv
+│  └─ PetFinder-StateLabels.csv
 └─ src/
-   ├─ __init__.py
    ├─ config.py
-   ├─ data_loader.py
    ├─ features_tabular.py
    ├─ features_text.py
    ├─ features_image_meta.py
-   ├─ model_trainer.py
-   ├─ evaluator.py
-   └─ run.py
+   └─ model/                     # saved model artifacts
 ```
 
 ### Kaggle data structure (local only)
@@ -145,13 +163,7 @@ data/raw/
 
 ---
 
-## What each file/class is for (minimal)
-
-### `src/config.py`
-Holds all paths (train/test CSV, metadata folders, etc.) and key column names.
-
-### `src/data_loader.py`
-**DataLoader**: loads `train.csv`/`test.csv`, merges label lookup tables if needed, and creates a stratified train/valid split on `AdoptionSpeed`.
+## What each file/class is for 
 
 ### `src/features_tabular.py`
 **TabularFeatures**: selects numeric/categorical columns, handles missing values, encodes categoricals, outputs tabular preprocessing for the model pipeline.
@@ -162,18 +174,12 @@ Holds all paths (train/test CSV, metadata folders, etc.) and key column names.
 ### `src/features_image_meta.py` (optional step 3)
 **ImageMetaFeatures**: reads `train_metadata/*.json` and/or `train_sentiment/*.json` and converts them into numeric features (counts/scores/flags) keyed by `PetID`.
 
-### `src/model_trainer.py`
-**ModelTrainer**: creates a single pipeline (preprocess + model), trains it, predicts on validation, and supports stages (tabular / +text / +meta).
-
-### `src/evaluator.py`
-**Evaluator**: computes Quadratic Weighted Kappa (main metric) plus a small comparison summary (e.g., confusion matrix / per-class metrics).
-
-### `src/run.py`
+### `src/pedadoption_run.ipynb`
+Class that combines EDA, calls feature engineering functions, creates pipeline (preprocess + model), trains and evaluates it, predicts on validation and safes model's trained parameters in model folder. 
 Entry point to run:
 - Stage 1: tabular baseline
 - Stage 2 (optional): tabular + text
 - Stage 3 (optional): tabular + text + metadata features  
-Prints metrics and can save minimal artifacts (optional: predictions, `metrics.json`).
 
 ---
 

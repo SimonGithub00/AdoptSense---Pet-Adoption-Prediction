@@ -1,13 +1,38 @@
-﻿# Kaggle data (never commit, way too big)
+﻿# ===============================
+# Kaggle data (never commit)
+# ===============================
 data/
 
-# virtual environment
+# ===============================
+# Virtual environments
+# ===============================
 .venv/
+venv/
 
-# python cache
+# ===============================
+# Python cache
+# ===============================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
 
-# OS/editor
+# ===============================
+# Model artifacts
+# ===============================
+src/model/*
+!src/model/.gitkeep
+
+# ===============================
+# Jupyter
+# ===============================
+.ipynb_checkpoints/
+
+# ===============================
+# OS / Editor
+# ===============================
 .DS_Store
+Thumbs.db
 .vscode/
+.idea/
