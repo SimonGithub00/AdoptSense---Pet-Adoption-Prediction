@@ -262,7 +262,7 @@ def show_csv_upload():
                 st.markdown("---")
                 
                 from frontend.utils.predictions import make_prediction
-                from frontend.utils.recommendations import get_recommendations
+                from frontend.utils.recommendations import get_adoption_factors
                 
                 with st.spinner("Analyzing pets and generating predictions..."):
                     results = make_prediction(df)
@@ -323,23 +323,30 @@ def show_csv_upload():
                                     st.caption(f"Speed {speed_id} ({label}): {prob*100:.1f}%")
                             
                             st.markdown("---")
-                            
-                            # Get recommendations
-                            recommendations = get_recommendations(
-                                pred['original_data'],
-                                pred['prediction'],
-                                pred['confidence']
-                            )
-                            
-                            st.markdown("#### 🎯 Top Recommendations:")
-                            for rec in recommendations[:3]:
-                                with st.container(border=True):
-                                    st.markdown(f"**{rec['title']}**")
-                                    st.markdown(rec['description'])
-                                    st.markdown("**Tips:**")
-                                    for tip in rec['tips'][:3]:
-                                        st.markdown(f"- {tip}")
-                                    st.caption(f"Impact: {rec.get('impact', 'N/A')}")
+
+                            pos_factors, neg_factors = get_adoption_factors(pred['original_data'])
+
+                            col_pos, col_neg = st.columns(2)
+
+                            with col_pos:
+                                st.markdown("**Top 5 Factors Helping Adoption**")
+                                if pos_factors:
+                                    for j, f in enumerate(pos_factors, 1):
+                                        with st.container(border=True):
+                                            st.markdown(f"**{j}. {f['label']}**")
+                                            st.caption(f['sentence'])
+                                else:
+                                    st.info("No strong positive factors identified.")
+
+                            with col_neg:
+                                st.markdown("**Top 5 Factors Hindering Adoption**")
+                                if neg_factors:
+                                    for j, f in enumerate(neg_factors, 1):
+                                        with st.container(border=True):
+                                            st.markdown(f"**{j}. {f['label']}**")
+                                            st.caption(f['sentence'])
+                                else:
+                                    st.success("No significant hindering factors found!")
                     
                     # Visualization
                     st.markdown("---")
@@ -506,9 +513,8 @@ def show_manual_form():
             'RescuerID': [rescuer_id]
         })
         
-        from frontend.utils.predictions import make_prediction
-        from frontend.utils.recommendations import get_recommendations
-        from frontend.utils.predictions import AdoptionPredictor
+        from frontend.utils.predictions import make_prediction, AdoptionPredictor
+        from frontend.utils.recommendations import get_adoption_factors
         
         with st.spinner("Analyzing pet and generating prediction..."):
             results = make_prediction(pet_data)
@@ -572,37 +578,32 @@ def show_manual_form():
             
             st.markdown("---")
             
-            # Recommendations
-            st.markdown("## 💡 Personalized Recommendations")
-            
-            recommendations = get_recommendations(
-                pred['original_data'],
-                pred['prediction'],
-                pred['confidence']
-            )
-            
-            for i, rec in enumerate(recommendations, 1):
-                with st.container(border=True):
-                    col1, col2 = st.columns([4, 1]            if i <= 2 else [4, 0.5])
-                    
-                    with col1:
-                        st.markdown(f"### {rec['title']}")
-                        st.markdown(rec['description'])
-                        st.markdown("**Action Items:**")
-                        for tip in rec['tips']:
-                            st.markdown(f"- {tip}")
-                    
-                    if i <= len(recommendations):
-                        with col2:
-                            impact = rec.get('impact', 'N/A')
-                            if 'CRITICAL' in impact:
-                                st.error(f"⚠️\n{impact}")
-                            elif 'HIGH' in impact:
-                                st.warning(f"⚡\n{impact}")
-                            elif 'POSITIVE' in impact:
-                                st.success(f"✨\n{impact}")
-                            else:
-                                st.info(f"ℹ️\n{impact}")
+            # Adoption factor analysis
+            st.markdown("## Adoption Factor Analysis")
+
+            positive_factors, negative_factors = get_adoption_factors(pred['original_data'])
+
+            col_pos, col_neg = st.columns(2)
+
+            with col_pos:
+                st.markdown("### Top 5 Factors Helping Adoption")
+                if positive_factors:
+                    for i, factor in enumerate(positive_factors, 1):
+                        with st.container(border=True):
+                            st.markdown(f"**{i}. {factor['label']}**")
+                            st.caption(factor['sentence'])
+                else:
+                    st.info("No strong positive factors identified for this pet.")
+
+            with col_neg:
+                st.markdown("### Top 5 Factors Hindering Adoption")
+                if negative_factors:
+                    for i, factor in enumerate(negative_factors, 1):
+                        with st.container(border=True):
+                            st.markdown(f"**{i}. {factor['label']}**")
+                            st.caption(factor['sentence'])
+                else:
+                    st.success("No significant hindering factors found — great profile!")
         
         else:
             st.error(f"❌ Prediction failed: {results.get('error', 'Unknown error')}")
