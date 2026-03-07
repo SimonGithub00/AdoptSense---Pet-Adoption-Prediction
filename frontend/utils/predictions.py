@@ -94,10 +94,14 @@ class AdoptionPredictor:
         """
         Align feature columns with model expectations.
         Add missing columns or drop extra columns.
+
+        The model was trained with 37 features: 27 tabular + 10 Google NLP JSON
+        sentiment features. For live predictions (no JSON file available), the
+        10 sentiment columns are filled with 0, which represents a neutral/absent
+        signal. This is safe — 3.7% of training pets had the same zero-fill.
         """
         for col in self.feature_columns:
             if col not in X.columns:
-                # Add missing column with 0
                 X[col] = 0
         
         # Keep only expected columns in order
