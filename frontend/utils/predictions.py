@@ -1,10 +1,11 @@
 """
 Predictions module - handles feature engineering and model predictions
 """
-import pandas as pd
-import numpy as np
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Add src to path for imports
 project_root = Path(__file__).parent.parent.parent
@@ -17,7 +18,7 @@ from frontend.utils.model_loader import get_model_loader
 
 class AdoptionPredictor:
     """Make adoption speed predictions for pets."""
-    
+
     ADOPTION_SPEED_LABELS = {
         0: "Same day",
         1: "1-7 days",
@@ -25,7 +26,7 @@ class AdoptionPredictor:
         3: "31-90 days",
         4: "No adoption"
     }
-    
+
     ADOPTION_SPEED_EMOJI = {
         0: "⭐⭐⭐⭐⭐",
         1: "⭐⭐⭐⭐",
@@ -33,7 +34,7 @@ class AdoptionPredictor:
         3: "⭐⭐",
         4: "⭐"
     }
-    
+
     def __init__(self):
         """Initialize predictor with model and feature engineering."""
         self.model_loader = get_model_loader()
@@ -41,32 +42,32 @@ class AdoptionPredictor:
         self.scaler = self.model_loader.get_scaler()
         self.model = self.model_loader.get_xgb_model()
         self.feature_columns = self.model_loader.get_features()
-    
+
     def predict(self, pet_data: pd.DataFrame) -> dict:
         """
         Make adoption speed prediction for pet(s).
-        
+
         Args:
             pet_data: DataFrame with pet information
-            
+
         Returns:
             Dictionary with predictions and probabilities
         """
         # Engineer features
         X = self.feature_engineer.feature_engineering_tabular(pet_data)
-        
+
         # Ensure all expected features are present
         X = self._align_features(X)
-        
+
         # Scale numeric features
         numeric_features = X.select_dtypes(include=[np.number]).columns.tolist()
         X_scaled = X.copy()
         X_scaled[numeric_features] = self.scaler.transform(X[numeric_features])
-        
+
         # Make predictions
         predictions = self.model.predict(X_scaled)
         probabilities = self.model.predict_proba(X_scaled)
-        
+
         # Format results
         results = []
         for idx, (pred, probs) in enumerate(zip(predictions, probabilities)):
@@ -77,19 +78,19 @@ class AdoptionPredictor:
                 'prediction_emoji': self.ADOPTION_SPEED_EMOJI[int(pred)],
                 'confidence': float(probs[int(pred)]),
                 'probabilities': {
-                    i: float(probs[i]) 
+                    i: float(probs[i])
                     for i in range(len(self.ADOPTION_SPEED_LABELS))
                 },
                 'original_data': pet_data.iloc[idx].to_dict() if len(pet_data) > idx else {}
             }
             results.append(result)
-        
+
         return {
             'success': True,
             'predictions': results,
             'count': len(results)
         }
-    
+
     def _align_features(self, X: pd.DataFrame) -> pd.DataFrame:
         """
         Align feature columns with model expectations.
@@ -103,12 +104,12 @@ class AdoptionPredictor:
         for col in self.feature_columns:
             if col not in X.columns:
                 X[col] = 0
-        
+
         # Keep only expected columns in order
         X = X[self.feature_columns]
-        
+
         return X
-    
+
     @staticmethod
     def get_adoption_speed_info() -> dict:
         """Get information about adoption speed classes."""
@@ -128,10 +129,10 @@ class AdoptionPredictor:
 def make_prediction(pet_data: pd.DataFrame) -> dict:
     """
     Convenience function to make predictions.
-    
+
     Args:
         pet_data: DataFrame with pet information
-        
+
     Returns:
         Prediction results dictionary
     """

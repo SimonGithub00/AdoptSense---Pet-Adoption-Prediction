@@ -5,6 +5,7 @@ from typing import Dict, List, Any, Tuple
 
 
 def _word_count(d: Dict) -> int:
+    """Return word count of the pet's description."""
     desc = d.get('Description', '') or ''
     return len(str(desc).split())
 
@@ -167,7 +168,9 @@ ADOPTION_FACTORS = [
         'positive': None,
         'negative': {
             'check': lambda d: d.get('Health', 1) in [2, 3],
-            'label': lambda d: "Minor injury" if d.get('Health') == 2 else "Serious injury or illness",
+            'label': lambda d: (
+                "Minor injury" if d.get('Health') == 2 else "Serious injury or illness"
+            ),
             'sentence': lambda d: (
                 "A minor injury slows adoption — be transparent about recovery "
                 "timeline and care needs to reassure potential adopters."
@@ -476,27 +479,32 @@ def get_description_sentiment(description: str) -> dict:
     if compound >= 0.5:
         tone, tone_color, advice = (
             'Very Positive', 'success',
-            'The description radiates warmth and enthusiasm — this strongly supports a faster adoption.'
+            'The description radiates warmth and enthusiasm — '
+            'this strongly supports a faster adoption.'
         )
     elif compound >= 0.05:
         tone, tone_color, advice = (
             'Positive', 'success',
-            'The description has a positive tone, which builds emotional connection with potential adopters.'
+            'The description has a positive tone, which builds emotional connection '
+            'with potential adopters.'
         )
     elif compound > -0.05:
         tone, tone_color, advice = (
             'Neutral', 'info',
-            'The description reads as factual/neutral — adding warmer, more personal language could improve adoption speed.'
+            'The description reads as factual/neutral — adding warmer, more personal '
+            'language could improve adoption speed.'
         )
     elif compound > -0.5:
         tone, tone_color, advice = (
             'Negative', 'warning',
-            'The description carries a negative tone; consider rewriting with upbeat, hopeful language to attract more adopters.'
+            'The description carries a negative tone; consider rewriting with upbeat, '
+            'hopeful language to attract more adopters.'
         )
     else:
         tone, tone_color, advice = (
             'Very Negative', 'error',
-            'The description is strongly negative in tone — this actively discourages adopters and should be rewritten.'
+            'The description is strongly negative in tone — this actively discourages '
+            'adopters and should be rewritten.'
         )
 
     return {
