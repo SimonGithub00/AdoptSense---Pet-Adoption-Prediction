@@ -448,6 +448,68 @@ ADOPTION_FACTORS = [
 ]
 
 
+def get_description_sentiment(description: str) -> dict:
+    """
+    Run VADER sentiment analysis on a pet description (same analysis the model uses).
+
+    Returns a dict with keys:
+        compound  (-1 to +1 overall score)
+        pos / neu / neg  (0–1 proportion scores)
+        tone        human-readable label
+        tone_color  'success' | 'info' | 'warning' | 'error'  (for Streamlit)
+        advice      one-sentence interpretation for the adopter
+    """
+    try:
+        from nltk.sentiment import SentimentIntensityAnalyzer
+        import nltk
+        try:
+            nltk.data.find('sentiment/vader_lexicon')
+        except LookupError:
+            nltk.download('vader_lexicon', quiet=True)
+        sia = SentimentIntensityAnalyzer()
+        scores = sia.polarity_scores(description or '')
+    except Exception:
+        scores = {'compound': 0.0, 'pos': 0.0, 'neu': 1.0, 'neg': 0.0}
+
+    compound = scores['compound']
+
+    if compound >= 0.5:
+        tone, tone_color, advice = (
+            'Very Positive', 'success',
+            'The description radiates warmth and enthusiasm — this strongly supports a faster adoption.'
+        )
+    elif compound >= 0.05:
+        tone, tone_color, advice = (
+            'Positive', 'success',
+            'The description has a positive tone, which builds emotional connection with potential adopters.'
+        )
+    elif compound > -0.05:
+        tone, tone_color, advice = (
+            'Neutral', 'info',
+            'The description reads as factual/neutral — adding warmer, more personal language could improve adoption speed.'
+        )
+    elif compound > -0.5:
+        tone, tone_color, advice = (
+            'Negative', 'warning',
+            'The description carries a negative tone; consider rewriting with upbeat, hopeful language to attract more adopters.'
+        )
+    else:
+        tone, tone_color, advice = (
+            'Very Negative', 'error',
+            'The description is strongly negative in tone — this actively discourages adopters and should be rewritten.'
+        )
+
+    return {
+        'compound': compound,
+        'pos': scores['pos'],
+        'neu': scores['neu'],
+        'neg': scores['neg'],
+        'tone': tone,
+        'tone_color': tone_color,
+        'advice': advice,
+    }
+
+
 def get_adoption_factors(
     pet_data: Dict[str, Any]
 ) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:

@@ -262,7 +262,7 @@ def show_csv_upload():
                 st.markdown("---")
                 
                 from frontend.utils.predictions import make_prediction
-                from frontend.utils.recommendations import get_adoption_factors
+                from frontend.utils.recommendations import get_adoption_factors, get_description_sentiment
                 
                 with st.spinner("Analyzing pets and generating predictions..."):
                     results = make_prediction(df)
@@ -311,10 +311,65 @@ def show_csv_upload():
                         
                         with st.expander(f"{pred['prediction_emoji']} {pet_name} - {pred['prediction_label']}", 
                                         expanded=i==0):
-                            col1, col2 = st.columns([2, 1])
-                            
+                            col1, col_sent, col2 = st.columns([1, 2, 1])
+
                             with col1:
                                 st.markdown(f"**Confidence:** {pred['confidence']*100:.1f}%")
+
+                            with col_sent:
+                                sentiment = get_description_sentiment(
+                                    pred['original_data'].get('Description', '')
+                                )
+                                tone_colors = {
+                                    'success': '#2e7d32',
+                                    'info':    '#1565c0',
+                                    'warning': '#e65100',
+                                    'error':   '#b71c1c',
+                                }
+                                bar_colors = {
+                                    'success': '#4CAF50',
+                                    'info':    '#90A4AE',
+                                    'warning': '#FF9800',
+                                    'error':   '#F44336',
+                                }
+                                tone_hex = tone_colors[sentiment['tone_color']]
+                                pos_pct = sentiment['pos'] * 100
+                                neu_pct = sentiment['neu'] * 100
+                                neg_pct = sentiment['neg'] * 100
+                                st.markdown(
+                                    f"**Description Sentiment** — "
+                                    f"<span style='color:{tone_hex}; font-weight:600;'>"
+                                    f"{sentiment['tone']}  |  Score: {sentiment['compound']:+.2f}"
+                                    f"</span>",
+                                    unsafe_allow_html=True
+                                )
+                                st.markdown(f"""
+<div style="font-size:13px; line-height:2;">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div style="width:160px; height:13px; background:#e0e0e0; border-radius:3px; overflow:hidden; flex-shrink:0;">
+      <div style="width:{pos_pct:.0f}%; height:100%; background:#4CAF50;"></div>
+    </div>
+    <span style="color:#4CAF50; font-weight:600; min-width:70px;">Positive</span>
+    <span>{pos_pct:.0f}%</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div style="width:160px; height:13px; background:#e0e0e0; border-radius:3px; overflow:hidden; flex-shrink:0;">
+      <div style="width:{neu_pct:.0f}%; height:100%; background:#90A4AE;"></div>
+    </div>
+    <span style="color:#607D8B; font-weight:600; min-width:70px;">Neutral</span>
+    <span>{neu_pct:.0f}%</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div style="width:160px; height:13px; background:#e0e0e0; border-radius:3px; overflow:hidden; flex-shrink:0;">
+      <div style="width:{neg_pct:.0f}%; height:100%; background:#F44336;"></div>
+    </div>
+    <span style="color:#F44336; font-weight:600; min-width:70px;">Negative</span>
+    <span>{neg_pct:.0f}%</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+                                st.caption(sentiment['advice'])
+
                             with col2:
                                 st.markdown(f"**Probability Breakdown:**")
                                 for speed_id, prob in pred['probabilities'].items():
@@ -514,7 +569,7 @@ def show_manual_form():
         })
         
         from frontend.utils.predictions import make_prediction, AdoptionPredictor
-        from frontend.utils.recommendations import get_adoption_factors
+        from frontend.utils.recommendations import get_adoption_factors, get_description_sentiment
         
         with st.spinner("Analyzing pet and generating prediction..."):
             results = make_prediction(pet_data)
@@ -577,7 +632,61 @@ def show_manual_form():
             st.plotly_chart(fig, use_container_width=True)
             
             st.markdown("---")
-            
+
+            # Description sentiment analysis
+            st.markdown("### Description Sentiment Analysis")
+            sentiment = get_description_sentiment(pred['original_data'].get('Description', ''))
+
+            tone_colors = {
+                'success': '#2e7d32',
+                'info':    '#1565c0',
+                'warning': '#e65100',
+                'error':   '#b71c1c',
+            }
+            tone_hex = tone_colors[sentiment['tone_color']]
+            pos_pct = sentiment['pos'] * 100
+            neu_pct = sentiment['neu'] * 100
+            neg_pct = sentiment['neg'] * 100
+
+            sent_col1, sent_col2 = st.columns([1, 2])
+            with sent_col1:
+                st.markdown(
+                    f"<span style='color:{tone_hex}; font-weight:600; font-size:15px;'>"
+                    f"{sentiment['tone']}  |  Score: {sentiment['compound']:+.2f}</span>",
+                    unsafe_allow_html=True
+                )
+                st.markdown(f"""
+<div style="font-size:13px; line-height:2.2; margin-top:6px;">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div style="width:180px; height:13px; background:#e0e0e0; border-radius:3px; overflow:hidden; flex-shrink:0;">
+      <div style="width:{pos_pct:.0f}%; height:100%; background:#4CAF50;"></div>
+    </div>
+    <span style="color:#4CAF50; font-weight:600; min-width:70px;">Positive</span>
+    <span>{pos_pct:.0f}%</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div style="width:180px; height:13px; background:#e0e0e0; border-radius:3px; overflow:hidden; flex-shrink:0;">
+      <div style="width:{neu_pct:.0f}%; height:100%; background:#90A4AE;"></div>
+    </div>
+    <span style="color:#607D8B; font-weight:600; min-width:70px;">Neutral</span>
+    <span>{neu_pct:.0f}%</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div style="width:180px; height:13px; background:#e0e0e0; border-radius:3px; overflow:hidden; flex-shrink:0;">
+      <div style="width:{neg_pct:.0f}%; height:100%; background:#F44336;"></div>
+    </div>
+    <span style="color:#F44336; font-weight:600; min-width:70px;">Negative</span>
+    <span>{neg_pct:.0f}%</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+            with sent_col2:
+                st.markdown("")
+                st.markdown("")
+                st.info(sentiment['advice'])
+
+            st.markdown("---")
+
             # Adoption factor analysis
             st.markdown("## Adoption Factor Analysis")
 
