@@ -203,8 +203,6 @@ def show_csv_upload():
         - **VideoAmt** (number of videos, optional)
         - **PhotoAmt** (number of photos)
         - **Description** (pet description)
-        - **PetID** (unique pet identifier)
-        - **RescuerID** (rescuer identifier)
         """)
     
     with col2:
@@ -231,8 +229,6 @@ def show_csv_upload():
             'PhotoAmt': [3, 1, 2],
             'VideoAmt': [0, 0, 1],
             'Description': ['Fluffy is a friendly kitten', 'Urban rescue cat', 'Energetic dogs'],
-            'PetID': ['pet1', 'pet2', 'pet3'],
-            'RescuerID': ['rescuer1', 'rescuer1', 'rescuer2']
         }
         sample_df = pd.DataFrame(sample_data)
         st.download_button(
@@ -529,13 +525,6 @@ def show_manual_form():
     with col2:
         breed2 = st.number_input("Secondary Breed ID (optional)", min_value=0, value=0)
     
-    # Pet ID and Rescuer ID (optional)
-    col1, col2 = st.columns(2)
-    with col1:
-        pet_id = st.text_input("Pet ID (optional)", value=f"pet_{int(age)}m")
-    with col2:
-        rescuer_id = st.text_input("Rescuer ID (optional)", value="user_123")
-    
     st.markdown("---")
     
     # Predict button
@@ -564,8 +553,6 @@ def show_manual_form():
             'PhotoAmt': [photo_amt],
             'VideoAmt': [video_amt],
             'Description': [description],
-            'PetID': [pet_id],
-            'RescuerID': [rescuer_id]
         })
         
         from frontend.utils.predictions import make_prediction, AdoptionPredictor
