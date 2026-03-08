@@ -1,12 +1,31 @@
+"""
+Google NLP sentiment feature engineering for AdoptSense.
+
+Parses pre-computed Google Cloud Natural Language API JSON files (one per
+pet listing) into a flat numeric feature DataFrame.  These features are used
+for analytical comparison in the notebook (Sections 3.4 and 3.5) but are
+**not** included in the deployed pipeline, which uses VADER instead.
+
+Typical usage
+-------------
+    from src.features_sentiment import SentimentFeatures, SENTIMENT_FEATURE_COLS
+
+    sf = SentimentFeatures(cfg.TRAIN_SENTIMENT_DIR)
+    sent_df = sf.load_for_ids(df["PetID"])
+    df = df.merge(sent_df, on="PetID", how="left")
+"""
+
 import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from typing import List, Optional
 
 
-# Fallback values used when a sentiment JSON is missing or malformed
-_FALLBACK = {
+# Fallback values used when a sentiment JSON is missing or malformed.
+# Zero represents a neutral/absent signal, consistent with how 3.7% of
+# training pets (those with empty descriptions) were handled at training time.
+_FALLBACK: dict = {
     "sentiment_doc_score": 0.0,
     "sentiment_doc_magnitude": 0.0,
     "sentiment_avg_sentence_score": 0.0,
@@ -19,43 +38,53 @@ _FALLBACK = {
     "sentiment_avg_entity_salience": 0.0,
 }
 
-SENTIMENT_FEATURE_COLS = list(_FALLBACK.keys())
+SENTIMENT_FEATURE_COLS: list = list(_FALLBACK.keys())
 
 
-def _parse_sentiment_json(path: Path) -> dict:
+def _parse_sentiment_json(path: Path) -> dict:  # pylint: disable=too-many-locals
+    """Parse a single Google NLP sentiment JSON file into a flat feature dict.
+
+    Parameters
+    ----------
+    path:
+        Absolute path to a ``{PetID}.json`` file produced by the
+        Google Cloud Natural Language API.
+
+    Returns
+    -------
+    dict
+        Keys match :data:`SENTIMENT_FEATURE_COLS`.  Extracted features:
+
+        - ``sentiment_doc_score`` — document-level sentiment score (-1 to +1).
+        - ``sentiment_doc_magnitude`` — document-level magnitude (0+, emotional strength).
+        - ``sentiment_avg_sentence_score`` — mean per-sentence sentiment score.
+        - ``sentiment_avg_sentence_magnitude`` — mean per-sentence sentiment magnitude.
+        - ``sentiment_sentence_count`` — number of sentences in the description.
+        - ``sentiment_pos_sentence_ratio`` — fraction of sentences with score > 0.
+        - ``sentiment_neg_sentence_ratio`` — fraction of sentences with score < 0.
+        - ``sentiment_entity_count`` — number of named entities detected.
+        - ``sentiment_max_entity_salience`` — salience of the most prominent entity.
+        - ``sentiment_avg_entity_salience`` — mean entity salience across all entities.
     """
-    Parse a single Google NLP sentiment JSON file and return a flat feature dict.
+    with open(path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
 
-    Extracted features:
-        sentiment_doc_score            - Document-level sentiment score (-1 to +1).
-        sentiment_doc_magnitude        - Document-level magnitude (0+, strength of emotion).
-        sentiment_avg_sentence_score   - Mean per-sentence sentiment score.
-        sentiment_avg_sentence_magnitude - Mean per-sentence sentiment magnitude.
-        sentiment_sentence_count       - Number of sentences in the description.
-        sentiment_pos_sentence_ratio   - Fraction of sentences with score > 0.
-        sentiment_neg_sentence_ratio   - Fraction of sentences with score < 0.
-        sentiment_entity_count         - Number of named entities detected.
-        sentiment_max_entity_salience  - Salience of the most prominent entity.
-        sentiment_avg_entity_salience  - Mean entity salience across all entities.
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    # --- Document-level sentiment ---
+    # Document-level sentiment
     doc_sentiment = data.get("documentSentiment", {})
     doc_score = float(doc_sentiment.get("score", 0.0))
     doc_magnitude = float(doc_sentiment.get("magnitude", 0.0))
 
-    # --- Sentence-level sentiment ---
+    # Sentence-level sentiment
     sentences = data.get("sentences", [])
     if sentences:
         scores = [s.get("sentiment", {}).get("score", 0.0) for s in sentences]
         magnitudes = [s.get("sentiment", {}).get("magnitude", 0.0) for s in sentences]
+        n = len(sentences)
         avg_sentence_score = float(np.mean(scores))
         avg_sentence_magnitude = float(np.mean(magnitudes))
-        sentence_count = len(sentences)
-        pos_ratio = float(sum(1 for s in scores if s > 0) / sentence_count)
-        neg_ratio = float(sum(1 for s in scores if s < 0) / sentence_count)
+        sentence_count = n
+        pos_ratio = float(sum(1 for s in scores if s > 0) / n)
+        neg_ratio = float(sum(1 for s in scores if s < 0) / n)
     else:
         avg_sentence_score = 0.0
         avg_sentence_magnitude = 0.0
@@ -63,7 +92,7 @@ def _parse_sentiment_json(path: Path) -> dict:
         pos_ratio = 0.0
         neg_ratio = 0.0
 
-    # --- Entity-level features ---
+    # Entity-level features
     entities = data.get("entities", [])
     if entities:
         saliences = [e.get("salience", 0.0) for e in entities]
@@ -90,50 +119,45 @@ def _parse_sentiment_json(path: Path) -> dict:
 
 
 class SentimentFeatures:
+    """Load pre-computed Google NLP sentiment JSON files into a feature DataFrame.
+
+    One row is produced per PetID.  Missing or malformed JSON files are
+    silently zero-filled so downstream feature matrices are always complete.
+
+    Parameters
+    ----------
+    sentiment_dir:
+        Directory containing ``{PetID}.json`` files produced by the
+        Google Cloud Natural Language API.
+
+    Examples
+    --------
+    Training data::
+
+        sf = SentimentFeatures(cfg.TRAIN_SENTIMENT_DIR)
+        sent_train = sf.load_for_ids(df_train["PetID"])
+        df_train = df_train.merge(sent_train, on="PetID", how="left")
     """
-    Load pre-computed Google NLP sentiment JSON files and convert them into a
-    flat numeric feature DataFrame, one row per PetID.
 
-    Usage
-    -----
-    # For training data:
-    sf = SentimentFeatures(cfg.TRAIN_SENTIMENT_DIR)
-    sent_train = sf.load_for_ids(df_train["PetID"])
-
-    # For test data:
-    sf_test = SentimentFeatures(cfg.TEST_SENTIMENT_DIR)
-    sent_test = sf_test.load_for_ids(df_test["PetID"])
-
-    # Merge into main DataFrame:
-    df_train = df_train.merge(sent_train, on="PetID", how="left")
-    """
-
-    def __init__(self, sentiment_dir: Path):
-        """
-        Parameters
-        ----------
-        sentiment_dir : Path
-            Directory containing {PetID}.json files produced by Google NLP API.
-        """
+    def __init__(self, sentiment_dir: Path) -> None:
         self.sentiment_dir = Path(sentiment_dir)
 
-    def load_for_ids(self, pet_ids: pd.Series) -> pd.DataFrame:
-        """
-        Parse sentiment JSON for each PetID and return a merged feature DataFrame.
+    def __repr__(self) -> str:
+        return f"SentimentFeatures(sentiment_dir={self.sentiment_dir!r})"
 
-        Missing or malformed JSON files are filled with zeros so downstream
-        feature matrices are always complete.
+    def load_for_ids(self, pet_ids: pd.Series) -> pd.DataFrame:
+        """Parse sentiment JSON for each PetID and return a feature DataFrame.
 
         Parameters
         ----------
-        pet_ids : pd.Series
-            Series of PetID strings from train.csv or test.csv.
+        pet_ids:
+            Series of PetID strings from ``train.csv`` or ``test.csv``.
 
         Returns
         -------
         pd.DataFrame
-            Columns: ["PetID"] + SENTIMENT_FEATURE_COLS
-            One row per PetID (same order as input, no duplicates dropped).
+            Columns: ``["PetID"] + SENTIMENT_FEATURE_COLS``.
+            One row per PetID in the same order as the input.
         """
         rows = []
         for pet_id in pet_ids:
@@ -148,19 +172,17 @@ class SentimentFeatures:
             features["PetID"] = pet_id
             rows.append(features)
 
-        df = pd.DataFrame(rows, columns=["PetID"] + SENTIMENT_FEATURE_COLS)
-        return df
+        return pd.DataFrame(rows, columns=["PetID"] + SENTIMENT_FEATURE_COLS)
 
     def load_all(self) -> pd.DataFrame:
-        """
-        Parse every JSON file in the sentiment directory.
+        """Parse every JSON file in the sentiment directory.
 
-        Useful for computing coverage statistics or bulk loading without a CSV.
+        Useful for computing coverage statistics without a reference CSV.
 
         Returns
         -------
         pd.DataFrame
-            Columns: ["PetID"] + SENTIMENT_FEATURE_COLS
+            Columns: ``["PetID"] + SENTIMENT_FEATURE_COLS``.
         """
         rows = []
         for json_path in sorted(self.sentiment_dir.glob("*.json")):
@@ -175,18 +197,22 @@ class SentimentFeatures:
         return pd.DataFrame(rows, columns=["PetID"] + SENTIMENT_FEATURE_COLS)
 
     def coverage(self, pet_ids: pd.Series) -> float:
-        """
-        Return the fraction of PetIDs that have a corresponding sentiment JSON.
+        """Return the fraction of PetIDs that have a corresponding JSON file.
 
         Parameters
         ----------
-        pet_ids : pd.Series
+        pet_ids:
+            Series of PetID strings.
 
         Returns
         -------
-        float between 0.0 and 1.0
+        float
+            Value between 0.0 and 1.0.
         """
+        if len(pet_ids) == 0:
+            return 0.0
         found = sum(
-            1 for pid in pet_ids if (self.sentiment_dir / f"{pid}.json").exists()
+            1 for pid in pet_ids
+            if (self.sentiment_dir / f"{pid}.json").exists()
         )
-        return found / len(pet_ids) if len(pet_ids) > 0 else 0.0
+        return found / len(pet_ids)
