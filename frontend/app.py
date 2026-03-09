@@ -856,9 +856,7 @@ def show_about():
     ### Contact & Support
 
     For questions, suggestions, or issues:
-    - 📧 Email: support@adoptsense.com
-    - 💬 GitHub: [AdoptSense Repository]
-    - 🐾 Website: www.adoptsense.com
+    - 💬 GitHub: [AdoptSense Repository](https://github.com/SimonGithub00/AdoptSense-Pet-Adoption-Prediction)
 
     ---
 
