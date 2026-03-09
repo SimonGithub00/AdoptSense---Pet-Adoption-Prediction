@@ -5,17 +5,19 @@ Main Streamlit application
 import sys
 from pathlib import Path
 
+# Setup paths before local imports so that the `frontend` package is
+# discoverable regardless of whether the app is launched from the project
+# root or from inside the frontend/ directory.
+PROJECT_ROOT = Path(__file__).parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
 from frontend.utils.predictions import AdoptionPredictor, make_prediction
 from frontend.utils.recommendations import get_adoption_factors, get_description_sentiment
-
-# Setup paths
-PROJECT_ROOT = Path(__file__).parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Page configuration
 st.set_page_config(
