@@ -463,12 +463,21 @@ def get_description_sentiment(description: str) -> dict:
         advice      one-sentence interpretation for the adopter
     """
     try:
+        import ssl
+        import certifi
         from nltk.sentiment import SentimentIntensityAnalyzer
         import nltk
         try:
             nltk.data.find('sentiment/vader_lexicon')
         except LookupError:
-            nltk.download('vader_lexicon', quiet=True)
+            _orig = ssl._create_default_https_context
+            ssl._create_default_https_context = lambda: ssl.create_default_context(
+                cafile=certifi.where()
+            )
+            try:
+                nltk.download('vader_lexicon', quiet=True)
+            finally:
+                ssl._create_default_https_context = _orig
         sia = SentimentIntensityAnalyzer()
         scores = sia.polarity_scores(description or '')
     except Exception:
