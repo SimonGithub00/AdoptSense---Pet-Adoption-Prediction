@@ -52,7 +52,10 @@ frontend/
 │   ├── model_loader.py            # Load pickled XGBoost pipeline
 │   ├── predictions.py             # Make adoption predictions
 │   └── recommendations.py         # Generate recommendations
-├── assets/                         # Static assets (images, custom CSS)
+├── assets/                         # Static assets
+│   └── sample_pets.csv            # Sample CSV file for batch upload reference
+├── run_app.sh                      # Startup script for macOS/Linux
+├── run_app.bat                     # Startup script for Windows
 ├── requirements.txt               # Python dependencies
 └── README.md                      # This file
 ```
@@ -75,11 +78,12 @@ frontend/
 
 ### 3. Single Pet Form
 - Manual input form for one pet at a time
-- 20+ fields covering pet characteristics
+- 20+ fields covering pet characteristics (including breed selection from breed labels)
 - Real-time validation
 - Visual prediction with emoji indicators
 - Detailed probability breakdown
-- Top 3 personalized recommendations
+- Description sentiment analysis (VADER-based)
+- Top 5 factors helping and hindering adoption
 - Interactive probability distribution chart
 
 ### 4. About Tab
@@ -99,42 +103,30 @@ frontend/
 | 3 | ⭐⭐ | 31-90 Days | 2-3 Months | Needs improvement, slower adoption |
 | 4 | ⭐ | No Adoption | 100+ Days | Critical interventions needed |
 
-## 💡 Recommendations
+## 💡 Factor Analysis & Recommendations
 
-The system generates personalized recommendations in six categories:
+The system evaluates each pet's profile and surfaces the top-5 **positive factors** (helping adoption) and top-5 **negative factors** (hindering adoption), ranked by importance weight. Factors are assessed across these areas:
 
-1. **📸 Photography Campaign** (CRITICAL Impact)
-   - Minimum 3-5 high-quality photos
-   - No photos = 60%+ slow adoption
-   - Multiple angles, clear focus
+| Category | Positive Signal | Negative Signal |
+|----------|----------------|-----------------|
+| **📸 Photos** | 5+ photos | 0-2 photos |
+| **💰 Adoption Fee** | Free adoption | High or any fee |
+| **🐣 Age** | ≤ 12 months | > 36 months |
+| **🏥 Health** | Healthy | Minor/serious injury |
+| **💉 Vaccinated** | Yes | No / Unknown |
+| **🪱 Dewormed** | Yes | No / Unknown |
+| **✂️ Sterilized** | Yes | No / Unknown |
+| **✍️ Description** | 80+ words | < 20 words |
+| **📐 Size** | Small | Large / Extra-large |
+| **🔢 Quantity** | Single pet | Multiple pets |
+| **🎥 Video** | Has video(s) | No video |
 
-2. **✍️ Description Enhancement** (HIGH Impact)
-   - Warm, detailed descriptions
-   - Personality-focused content
-   - 50+ words recommended
-   - Emotional connection
+### Description Sentiment Analysis
 
-3. **💰 Pricing Strategy** (HIGH Impact)
-   - Free/low-cost incentives
-   - Fee is a barrier for slow categories
-   - Deposit models
-   - Value communication
-
-4. **🐣 Age-Targeted Outreach** (MEDIUM Impact)
-   - Youth-focused marketing for puppies/kittens
-   - Senior pet programs
-   - Specific promotional strategies
-
-5. **🏥 Health Transparency** (MEDIUM Impact)
-   - Clear health status communication
-   - Medical history documentation
-   - Recovery care timelines
-   - Trust building
-
-6. **🔒 Sterilization Strategy** (LOW-MEDIUM Impact)
-   - Benefits communication
-   - Part of adoption package
-   - Responsible ownership angle
+Each pet's description is also analyzed using **VADER sentiment analysis** (via NLTK):
+- Compound score from -1 (very negative) to +1 (very positive)
+- Positive / Neutral / Negative proportion breakdown
+- Tone label and actionable writing advice displayed in the UI
 
 ## 🔧 Configuration
 
@@ -167,17 +159,15 @@ For batch uploads, ensure your CSV includes these columns:
 - `Breed1`, `Breed2` (breed IDs)
 - `Gender` (1=Male, 2=Female, 3=Mixed)
 - `Color1`, `Color2`, `Color3` (color IDs)
-- `MaturitySize` (0-4)
-- `FurLength` (0-3)
-- `Vaccinated`, `Dewormed`, `Sterilized` (1-3)
-- `Health` (1-3)
-- `Quantity` (number)
+- `MaturitySize` (0=N/A, 1=Small, 2=Medium, 3=Large, 4=XL)
+- `FurLength` (0=N/A, 1=Short, 2=Medium, 3=Long)
+- `Vaccinated`, `Dewormed`, `Sterilized` (1=Yes, 2=No, 3=Not Sure)
+- `Health` (1=Healthy, 2=Minor Injury, 3=Serious Injury)
+- `Quantity` (number of pets)
 - `Fee` (adoption fee)
-- `State` (state ID)
+- `State` (Malaysian state ID, e.g. 41326 = Selangor)
 - `PhotoAmt` (number of photos)
 - `Description` (text)
-- `PetID` (unique ID)
-- `RescuerID` (rescuer ID)
 
 **Optional:**
 - `Name` (pet name)
@@ -250,23 +240,37 @@ StreamlitAPIException
 
 ## 🚀 Running the App
 
-### Option 1: From Project Root
+### Option 1: Startup Script (macOS/Linux)
+```bash
+cd frontend
+bash run_app.sh
+```
+Automatically activates the virtual environment (if present at `../.venv`) and starts the app.
+
+### Option 2: Startup Script (Windows)
+```batch
+cd frontend
+run_app.bat
+```
+Automatically activates the virtual environment (if present at `..\\.venv`) and starts the app.
+
+### Option 3: From Project Root
 ```bash
 streamlit run frontend/app.py
 ```
 
-### Option 2: From Frontend Directory
+### Option 4: From Frontend Directory
 ```bash
 cd frontend
 streamlit run app.py
 ```
 
-### Option 3: With Custom Port
+### Option 5: With Custom Port
 ```bash
 streamlit run app.py --server.port 8502
 ```
 
-### Option 4: With Custom Settings
+### Option 6: With Custom Settings
 ```bash
 streamlit run app.py \
   --server.headless true \
@@ -296,12 +300,13 @@ UI Display & Visualization
 
 1. **Input** → User uploads CSV or fills form
 2. **Parsing** → Data validated and parsed
-3. **Engineering** → 20+ features extracted/engineered
+3. **Engineering** → 37 features extracted/engineered (27 tabular + 10 sentiment features)
 4. **Scaling** → Numeric features standardized
 5. **Prediction** → XGBoost generates adoption speed + probabilities
-6. **Recommendations** → Decision rules generate 3-6 suggestions
-7. **Visualization** → Results displayed with charts and metrics
-8. **Export** → Results can be exported as CSV (future feature)
+6. **Sentiment** → VADER analyzes description tone (compound, pos/neu/neg scores)
+7. **Factor Analysis** → Top-5 positive and top-5 negative adoption factors identified
+8. **Visualization** → Results displayed with charts and metrics
+9. **Export** → Results can be exported as CSV (future feature)
 
 ## 📦 Dependencies
 
@@ -312,6 +317,7 @@ Core dependencies:
 - `scikit-learn` - Preprocessing (StandardScaler)
 - `xgboost` - Model inference
 - `plotly` - Interactive charts
+- `nltk` - VADER sentiment analysis for pet descriptions
 
 See `requirements.txt` for exact versions.
 
@@ -338,7 +344,6 @@ See `requirements.txt` for exact versions.
 ## 📈 Future Enhancements
 
 - [ ] Image quality analysis (CNN)
-- [ ] Real-time sentiment analysis
 - [ ] Export recommendations as PDF
 - [ ] Historical comparison tracking
 - [ ] Batch optimization suggestions
