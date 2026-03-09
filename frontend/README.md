@@ -198,7 +198,7 @@ For batch uploads, ensure your CSV includes these columns:
 
 - No data stored on servers
 - All processing is local
-- No external API calls (except Streamlit)
+- One-time network call on first run to download the NLTK `vader_lexicon` (~1 MB); cached locally afterwards
 - Model executes in user's Python environment
 - CSV/form data only used for predictions during session
 
@@ -318,6 +318,7 @@ Core dependencies:
 - `xgboost` - Model inference
 - `plotly` - Interactive charts
 - `nltk` - VADER sentiment analysis for pet descriptions
+- `certifi` - SSL certificate bundle for NLTK lexicon download
 
 See `requirements.txt` for exact versions.
 
