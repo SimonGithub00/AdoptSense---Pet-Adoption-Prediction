@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS with animations and beautiful styling
 st.markdown("""
     <style>
     .main {
@@ -46,6 +46,81 @@ st.markdown("""
     }
     .predict-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    
+    /* Loading animation */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 60px;
+        height: 60px;
+        animation: spin 2s linear infinite;
+    }
+    
+    .loading-paws {
+        font-size: 3em;
+        animation: bounce 1.5s ease-in-out infinite;
+        display: inline-block;
+    }
+    
+    .loading-text {
+        font-size: 1.2em;
+        font-weight: 600;
+        margin-top: 1rem;
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+    }
+    
+    .model-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9em;
+        margin: 0.5rem 0.25rem;
+        font-weight: 600;
+    }
+    
+    .success-card {
+        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    
+    .warning-card {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 10px;
@@ -94,29 +169,31 @@ def show_home():
     st.markdown("""
     ## Welcome to AdoptSense 👋
 
-    **AdoptSense** is an AI-powered tool designed to help predict adoption speed for pets
-    and provide actionable recommendations to improve their chances of finding a loving home.
+    **AdoptSense** is an AI-powered pet adoption speed predictor powered by advanced machine learning.
+    We analyze 27 key pet characteristics to forecast adoption timelines and provide data-driven
+    recommendations to help pets find loving homes faster.
 
     ### Who is this for?
 
-    - 🏥 **Animal Shelters & Rescue Organizations** - Optimize your pet listings
+    - 🏥 **Animal Shelters & Rescue Organizations** - Optimize listings and identify at-risk pets early
     - 👨‍👩‍👧 **Pet Owners** - Understand adoption prospects before rehoming
-    - 💼 **Pet Adoption Businesses** - Data-driven listing optimization
+    - 💼 **Pet Adoption Businesses** - Data-driven strategy for better outcomes
 
     ### How it Works
 
     1. **Input Pet Data** - Upload a CSV with multiple pets or fill a form for a single pet
-    2. **AI Analysis** - Our trained model analyzes 20+ pet characteristics
-    3. **Get Predictions** - Adoption speed forecast with confidence scores
+    2. **AI Analysis** - XGBoost analyzes 27 tabular + sentiment features
+    3. **Get Predictions** - Adoption speed forecast with class probabilities
     4. **Actionable Recommendations** - Specific, prioritized improvement suggestions
-    5. **Visualizations** - See rankings and trends (for batch uploads)
+    5. **Visualizations** - See rankings and sentiment analysis (for batch uploads)
 
     ### Key Features
 
     - ⚡ **Real-time Predictions** - Instant adoption speed forecasts
     - 📊 **Comparative Analysis** - Compare multiple pets side-by-side
-    - 🎯 **Targeted Recommendations** - Prioritized improvement suggestions
+    - 🎯 **Targeted Recommendations** - Prioritized improvement suggestions based on feature importance
     - 📈 **Performance Ranking** - Visualize relative adoption potential
+    - 💭 **Sentiment Analysis** - Description tone analysis (VADER sentiment)
     - 📱 **User-Friendly Interface** - No coding required
 
     ### Adoption Speed Categories
@@ -259,13 +336,24 @@ def show_csv_upload():
                 st.dataframe(df.head(10), use_container_width=True)
 
             # Make predictions
-            batch_predict_clicked = st.button("🚀 Run Predictions", key="batch_predict")
-            st.caption("⏳ Please note: the first prediction may take a minute or more to load.")
+            batch_predict_clicked = st.button("🚀 Run Predictions", key="batch_predict", type="primary")
+            st.caption("⏳ Note: First run may take 1-2 minutes. Subsequent runs are faster.")
             if batch_predict_clicked:
                 st.markdown("---")
+                
+                # Beautiful loading animation
+                loading_placeholder = st.empty()
+                with loading_placeholder.container():
+                    st.markdown("""
+                    <div class="loading-container">
+                        <div class="loading-paws">🐾</div>
+                        <div class="loading-text">Analyzing Pets...</div>
+                        <p>Our XGBoost model is evaluating adoption factors...</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                with st.spinner("Analyzing pets and generating predictions..."):
-                    results = make_prediction(df)
+                results = make_prediction(df)
+                loading_placeholder.empty()  # Clear loading animation
 
                 if results['success']:
                     predictions = results['predictions']
@@ -601,7 +689,7 @@ def show_manual_form():
     predict_clicked = st.button(
         "🚀 Get Prediction & Recommendations", key="single_predict", type="primary"
     )
-    st.caption("⏳ Please note: the first prediction may take a minute or more to load.")
+    st.caption("⏳ Note: First run may take 1-2 minutes. Subsequent runs are faster.")
     if predict_clicked:
 
         # Create DataFrame
@@ -628,9 +716,20 @@ def show_manual_form():
             'VideoAmt': [video_amt],
             'Description': [description],
         })
+        
+        # Beautiful loading animation
+        loading_placeholder = st.empty()
+        with loading_placeholder.container():
+            st.markdown("""
+            <div class="loading-container">
+                <div class="loading-paws">🐾</div>
+                <div class="loading-text">Analyzing Pet...</div>
+                <p>XGBoost model processing adoption factors...</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-        with st.spinner("Analyzing pet and generating prediction..."):
-            results = make_prediction(pet_data)
+        results = make_prediction(pet_data)
+        loading_placeholder.empty()  # Clear loading animation
 
         if results['success']:
             pred = results['predictions'][0]
@@ -779,91 +878,132 @@ def show_manual_form():
 
 
 def show_about():
-    """Display about page."""
+    """Display about/information page."""
 
     st.header("ℹ️ About AdoptSense")
 
     st.markdown("""
-    ## Project Overview
+    ## 🎯 Mission
 
-    **AdoptSense** is an intelligent adoption speed prediction system powered by machine learning.
-    It analyzes pet characteristics and listing quality to predict how quickly a pet
-    will be adopted.
+    **AdoptSense** accelerates pet adoptions by providing data-driven insights to animal
+    shelters, rescue organizations, and pet owners. Our machine learning model predicts
+    adoption timelines and identifies key improvement factors to help pets find homes faster.
 
-    ### Model Information
+    ## 🤖 ML Model: XGBoost Classifier
 
-    - **Model Type:** XGBoost Gradient Boosting Classifier
-    - **Training Data:** Petfinder dataset (15,000+ pets)
-    - **Features:** 20+ behavioral, physical, and listing characteristics
-    - **Accuracy:** Validated on real-world adoption patterns
-    - **Metric:** Multi-class classification with class balancing
+    **Architecture:** Multi-class gradient boosting classifier (5 adoption speed categories)
 
-    ### Key Features Analyzed
+    **Training Data:** 14,993 pet listings from Petfinder.my (Malaysia)
 
-    - 📸 **Photos** - Most critical factor for adoption speed
-    - ✍️ **Description Quality** - Sentiment and length matter
-    - 🐕 **Pet Characteristics** - Age, breed, size, health
-    - 💰 **Pricing** - Adoption fees impact speed
-    - 🏥 **Health Status** - Vaccinations, sterilization, injuries
-    - 📍 **Geographic Location** - Regional adoption patterns
+    **Features:** 27 tabular attributes + 4 VADER sentiment features
+    - Tabular: age, size, health, fee, location, media counts, breed, color, etc.
+    - Sentiment: compound, positive, negative, neutral scores from description
 
-    ### Development Stack
+    **Performance Metrics:**
+    - **Accuracy:** 39.75% (Validation on 3,000 held-out pets)
+    - **Weighted F1:** 0.3809
+    - **Model Features:** 27 (23 tabular + 4 VADER sentiment)
 
-    - **Backend:** Python, scikit-learn, XGBoost
-    - **Feature Engineering:** Custom tabular and sentiment analysis
-    - **Frontend:** Streamlit for interactive UI
-    - **Data:** Pandas, NumPy for data processing
+    ## 📊 Feature Importance (Top 10)
 
-    ### How to Use
+    1. **has_photo** (0.1290) - Presence of photos (STRONGEST DRIVER)
+    2. **Sterilized** (0.0501) - Spay/neuter status
+    3. **age_bin** (0.0422) - Age group binned
+    4. **Age** (0.0392) - Age in months
+    5. **photo_bin** (0.0389) - Number of photos grouped
+    6. **FurLength** (0.0376) - Coat length
+    7. **Type** (0.0372) - Dog vs Cat
+    8. **Quantity** (0.0360) - Number of pets
+    9. **MaturitySize** (0.0355) - Maturity size
+    10. **State** (0.0343) - Geographic location
 
-    1. **Home Tab** - Get started and understand adoption speed categories
-    2. **Batch Upload** - Upload CSV with multiple pets for comparative analysis
-    3. **Single Pet Form** - Fill a form for individual pet analysis
-    4. **Get Recommendations** - Receive actionable improvement suggestions
+    ## 🔄 Model Comparison & Selection
 
-    ### Recommendations Categories
+    We systematically compared **XGBoost vs Random Forest** to select the best production model.
+    Both were trained with identical hyperparameters (300 estimators, max_depth=6) on the same
+    27-feature (tabular + VADER) dataset.
+    
+    **XGBoost Wins on All 5 Metrics:**
+    
+    | Metric | XGBoost | Random Forest | Difference |
+    |--------|---------|---------------|------------|
+    | **Accuracy** | 0.3931 | 0.3491 | **+4.40%** ✓ |
+    | **Macro F1** | 0.3314 | 0.2877 | **+4.37%** ✓ |
+    | **Weighted F1** | 0.3809 | 0.3354 | **+4.55%** ✓ |
+    | **Macro Precision** | 0.4115 | 0.3000 | **+11.15%** ✓ |
+    | **Macro Recall** | 0.3263 | 0.3100 | **+1.63%** ✓ |
+    
+    **Why XGBoost?** Sequential tree building with gradient-based corrections handles class
+    imbalance better and learns richer feature interactions than Random Forest's averaging approach.
 
-    - **Photography Campaign** - Add 3-5 high-quality photos (CRITICAL)
-    - **Description Enhancement** - More detailed, emotion-focused descriptions
-    - **Pricing Strategy** - Consider free/reduced-fee adoptions
-    - **Age-Targeted Outreach** - Market differently by age group
-    - **Health Transparency** - Clearly communicate health status
-    - **Sterilization Strategy** - Market sterilization benefits
+    ## 🛠️ Sentiment Feature Selection
 
-    ### Model Insights
+    We evaluated two sentiment enrichment strategies for the final pipeline:
 
-    The model reveals several important patterns:
+    | Approach | Features | Accuracy | Macro F1 | Deployable? | Selected? |
+    |----------|----------|----------|----------|-----------|-----------|
+    | **VADER** | 4 (compound, pos, neg, neu) | 0.3931 | 0.3314 | ✅ Yes (inline) | ✅ YES |
+    | **Google NLP JSON** | 10 (doc/entity scores) | 0.3995 | 0.3304 | ❌ No (API) | ❌ No |
+    
+    **Analysis:**
+    - Google NLP slightly outperforms VADER on accuracy (+0.64%), but lower on macro F1
+    - Google NLP requires pre-computed JSON files from training corpus → unavailable at inference
+    - VADER computes inline from description text → zero dependencies, identical train/prod behavior
+    - **Deployment Decision:** VADER selected for reliability over marginal metric gains
+    
+    This ensures the model deployed to production behaves identically to the training notebook.
 
-    - 🎯 **No photos = 60%+ slow adoption** - Photos are the strongest single factor
-    - ⏱️ **Age is crucial** - Puppies/kittens adopt fastest, older pets slower
-    - 💵 **Price is a barrier** - Free adoptions significantly faster than paid
-    - 📝 **Description matters** - Quality descriptions accelerate adoption
-    - 🏥 **Health impacts adoption** - Healthy pets adopt 2-3x faster
-    - 🌍 **Geographic variation** - Strong regional adoption patterns
+    ## 📚 Complete Data Processing Pipeline
 
-    ### Future Enhancements
+    **Section 1: Exploratory Data Analysis** (1.1-1.9)
+    - Dataset overview: 14,993 pets across 40 variables
+    - Target distribution: Highly imbalanced adoption speeds
+    - Key patterns: Photos, description, age, fee are critical
+    - Geographic, temporal, and health insights
+    
+    **Section 2: Predictive Modeling** (2.1-2.4)
+    1. Feature Engineering: Create 27 tabular + 4 sentiment features
+    2. Train/Val Split: Stratified 80/20 (11,994 train / 2,999 validation)
+    3. Scaling: StandardScaler fitted on training set
+    4. XGBoost Training: 300 estimators, max_depth=6, class weights
+    
+    **Section 3: Model Evaluation & Selection** (3.1-3.5)
+    5. XGBoost Metrics: Accuracy 0.3931, Macro F1 0.3461
+    6. Random Forest Comparison: XGBoost wins 5/5 metrics
+    7. Visualizations: Confusion matrices, ROC curves, PR curves
+    8. Feature Importance: 20 most influential features ranked
+    9. JSON Sentiment Impact: +0.0147 Macro F1 vs baseline
+    10. Sentiment Approach Test: VADER vs Google NLP (VADER selected)
+    
+    **Section 4: Pipeline Serialization** (4.1-4.2)
+    11. Save to Pickle: Complete scaler + model + metadata
+    12. Pipeline Summary: Human-readable notes on deployment
+    
+    **Section 5: Actionable Recommendations** (5.1-5.2)
+    13. Key Drivers: Top 10 features mapped to business factors
+    14. Strategic Actions: 5 concrete improvement areas for shelters
 
-    - Image quality/aesthetic scoring using CNNs
-    - Sentiment analysis for descriptions
-    - Time-series modeling for seasonality
-    - Regional strategy optimization
-    - Social media impact analysis
+    ## 🚀 Future Improvements
 
-    ### Data Privacy
+    - CNN-based image quality scoring to enhance photo importance
+    - Transformer-based sentiment (DistilBERT) for richer text understanding
+    - Temporal/seasonality analysis for adoption trends
+    - A/B testing framework to measure recommendation impact
+    - Geographic heatmaps for state-level adoption patterns
 
-    - All predictions are made locally
-    - No pet data is stored on servers
-    - Processing happens in your browser/local machine
+    ## 📄 References
 
-    ### Contact & Support
+    - **Dataset:** Petfinder.my dataset (14,993 pet listings)
+    - **ML Framework:** XGBoost
+    - **Sentiment:** VADER (nltk) + Google Cloud NLP (comparison)
+    - **Interface:** Streamlit
+    - **Deployment:** Python pickle serialization
 
-    For questions, suggestions, or issues:
-    - 💬 GitHub: [AdoptSense Repository](https://github.com/SimonGithub00/AdoptSense-Pet-Adoption-Prediction)
+    ## 💬 Contact & Support
 
-    ---
+    For questions, feedback, or feature requests, please refer to the project documentation
+    or open an issue on the GitHub repository.
 
-    **Version:** 1.0.0
-    **Last Updated:** February 2026
     """)
 
 

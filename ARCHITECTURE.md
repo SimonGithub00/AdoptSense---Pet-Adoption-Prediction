@@ -388,13 +388,11 @@ Quantity, Fee, State, VideoAmt, PhotoAmt, Description, PetID, RescuerID
 
 ### Output Features (Model uses)
 ```
-20+ engineered features:
-  - Raw numeric features
-  - Binned features
-  - Derived features
-  - Encoded categoricals
+27 engineered features:
+  - 23 tabular features (numeric, binned, derived, encoded categoricals)
+  - 4 VADER sentiment features (compound, positive, negative, neutral)
   - Text statistics
-  - (Model expects specific 20+ features)
+  - (Model expects specific 27 features: 23 tabular + 4 VADER)
 ```
 
 ---

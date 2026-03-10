@@ -33,7 +33,7 @@
 │                                                                   │
 │ How it Works                                                     │
 │   1. Input Pet Data - Upload CSV or fill form                   │
-│   2. AI Analysis - Model analyzes 20+ characteristics           │
+│   2. AI Analysis - Model analyzes 27 features (tabular+VADER)   │
 │   3. Get Predictions - Adoption speed forecast                  │
 │   4. Actionable Recommendations - Improvement suggestions       │
 │   5. Visualizations - Rankings and trends                       │
