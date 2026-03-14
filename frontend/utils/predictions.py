@@ -42,6 +42,37 @@ class AdoptionPredictor:
         self.scaler = self.model_loader.get_scaler()
         self.model = self.model_loader.get_xgb_model()
         self.feature_columns = self.model_loader.get_features()
+        self.expected_feature_columns = self._resolve_expected_feature_columns()
+
+    def _resolve_expected_feature_columns(self) -> list:
+        """Resolve the most reliable feature schema for inference.
+
+        Some artifacts may contain stale ``feature_columns`` metadata. Prefer
+        feature names from the fitted model/scaler when available.
+        """
+        # Best source: model's fitted feature names.
+        model_features = []
+        if hasattr(self.model, "feature_names_in_"):
+            model_features = list(self.model.feature_names_in_)
+
+        # XGBoost fallback: booster-level feature names.
+        if not model_features and hasattr(self.model, "get_booster"):
+            try:
+                booster = self.model.get_booster()
+                if getattr(booster, "feature_names", None):
+                    model_features = list(booster.feature_names)
+            except Exception:
+                model_features = []
+
+        # Scaler fallback: preserve the artifact column order by count.
+        if not model_features and hasattr(self.scaler, "n_features_in_") and self.feature_columns:
+            model_features = list(self.feature_columns[: self.scaler.n_features_in_])
+
+        # Final fallback: artifact metadata as-is.
+        if not model_features:
+            model_features = list(self.feature_columns)
+
+        return model_features
 
     def predict(self, pet_data: pd.DataFrame) -> dict:
         """
@@ -101,12 +132,12 @@ class AdoptionPredictor:
         10 sentiment columns are filled with 0, which represents a neutral/absent
         signal. This is safe — 3.7% of training pets had the same zero-fill.
         """
-        for col in self.feature_columns:
+        for col in self.expected_feature_columns:
             if col not in X.columns:
                 X[col] = 0
 
         # Keep only expected columns in order
-        X = X[self.feature_columns]
+        X = X[self.expected_feature_columns]
 
         return X
 
