@@ -66,6 +66,16 @@ From the EDA and model feature importance:
 | `colsample_bytree` | 0.8 |
 | `random_state` | 42 |
 
+**Validation metrics (Section 3.1 output):**
+
+| Metric | Value |
+|---|---|
+| Accuracy | 0.3991 |
+| Macro F1 | 0.3461 |
+| Weighted F1 | 0.3877 |
+| Macro Precision | 0.4738 |
+| Macro Recall | 0.3362 |
+
 **Evaluation metrics:** Accuracy, Macro F1, Weighted F1, Macro Precision, Macro Recall, per-class F1, ROC curves (one-vs-rest), Precision-Recall curves, confusion matrices.
 
 Macro F1 is used as the primary selection metric because it weights all five classes equally, penalising poor performance on minority classes (especially Speed 0, which represents only 2.7% of the data). Class weights are applied during training to partially counteract the imbalance.
@@ -76,7 +86,7 @@ Macro F1 is used as the primary selection metric because it weights all five cla
 
 ## Feature Engineering
 
-`TabularFeatures` (`src/features_tabular.py`) produces 27 features from the raw listing DataFrame. All features are integer-encoded; the StandardScaler is applied to all 27 for consistency with the inference path (scaling has no effect on XGBoost predictions since tree-based models are scale-invariant).
+`TabularFeatures` (`src/features_tabular.py`) produces 27 features from the raw listing DataFrame. In the notebook run captured in `src/petadoption_run.ipynb`, an additional 10 Google NLP JSON sentiment features are appended during modeling, producing a 37-column analytical matrix. All features are integer-encoded; the StandardScaler is applied to numeric columns selected from that matrix (scaling has no effect on XGBoost predictions since tree-based models are scale-invariant).
 
 **Structural features (23):**
 
@@ -109,11 +119,28 @@ Two sentiment approaches were evaluated in the notebook. The final pipeline uses
 
 The Kaggle dataset includes pre-computed Google Cloud Natural Language API JSON files for 96.3% of training pets (14,442 out of 14,993). These provide 10 richer features: document score, document magnitude, sentence-level ratios, entity count, and entity salience.
 
-Section 3.4 of the notebook uses these features for an ablation test (Google NLP JSON vs no sentiment baseline), confirming they add signal. Section 3.5 runs a head-to-head comparison against VADER.
+Section 3.4 of the notebook uses these features for an ablation test (27-feature baseline vs 37-feature enhanced), confirming they add signal:
+
+| Metric | Baseline (27) | Enhanced (+JSON, 37) | Delta |
+|---|---:|---:|---:|
+| Accuracy | 0.3931 | 0.3991 | +0.0060 |
+| Macro F1 | 0.3314 | 0.3461 | +0.0147 |
+| Weighted F1 | 0.3809 | 0.3877 | +0.0068 |
+| Macro Precision | 0.4115 | 0.4738 | +0.0623 |
+| Macro Recall | 0.3263 | 0.3362 | +0.0099 |
+
+Section 3.5 then runs a direct head-to-head comparison against VADER-only features.
 
 ### VADER (deployed pipeline)
 
-Despite Google NLP JSON features reaching a higher Macro F1 on validation data, VADER was selected for the deployed pipeline for a concrete engineering reason: the Google NLP JSON files exist only for the training corpus. For any new pet listing submitted through the frontend, no pre-computed JSON exists. The only alternatives would be calling the Google Cloud NLP API at inference time (latency, cost, external dependency) or zero-filling the 10 features (removing exactly the signal that gave Google NLP its advantage). VADER is computed directly from the description string — offline, instantaneous, and free — producing identical behaviour in training and in production.
+In the head-to-head test (Section 3.5 output), VADER and Google NLP JSON trade off metrics:
+
+| Approach | Feature Count | Accuracy | Macro F1 | Weighted F1 | Macro Precision | Macro Recall |
+|---|---:|---:|---:|---:|---:|---:|
+| VADER-only | 27 | 0.3931 | 0.3314 | 0.3809 | 0.4115 | 0.3263 |
+| Google NLP JSON-only | 33 | 0.3995 | 0.3304 | 0.3879 | 0.4005 | 0.3278 |
+
+VADER was selected by Macro F1 in that comparison and for the deployment practicality reason: Google NLP JSON files exist only for the training corpus. For new frontend listings, no pre-computed JSON exists. The alternatives are calling Google Cloud NLP at inference time (latency, cost, external dependency) or zero-filling JSON features (discarding the intended signal). VADER is computed directly from the description string - offline, fast, and reproducible in production.
 
 ---
 
@@ -129,8 +156,8 @@ Despite Google NLP JSON features reaching a higher Macro F1 on validation data, 
 | **3.1 Metric Choice** | Justification for Macro F1 as primary metric |
 | **3.2 Model Comparison** | Metrics table, bar plot, confusion matrices, ROC curves, Precision-Recall curves |
 | **3.3 Feature Importance** | Top 20 XGBoost feature importances |
-| **3.4 JSON Sentiment Feature Impact** | Ablation: 27-feature baseline vs 37-feature (+ Google NLP JSON) model |
-| **3.5 Performance Test: Sentiment Approaches** | Head-to-head: VADER vs Google NLP JSON; deployment decision (VADER) with rationale |
+| **3.4 JSON Sentiment Feature Impact** | Ablation output: enhanced model improves all tracked metrics vs baseline (Macro F1 +0.0147) |
+| **3.5 Performance Test: Sentiment Approaches** | Head-to-head output: VADER wins Macro F1 (0.3314 vs 0.3304), JSON wins Accuracy (0.3995 vs 0.3931), deployment decision remains VADER |
 | **4. Save Model Pipeline** | Pipeline dict creation, pickle export, summary text file |
 | **5. Drivers and Recommendations** | Top feature drivers, strategic actions for adoption centers |
 
@@ -194,10 +221,10 @@ Contents:
 
 | Key | Type | Description |
 |---|---|---|
-| `scaler` | `StandardScaler` | Fitted on 27 training features |
+| `scaler` | `StandardScaler` | Fitted from the selected feature matrix used in the notebook run |
 | `model` | `XGBClassifier` | Trained XGBoost (300 estimators) |
-| `feature_columns` | `list[str]` | Ordered list of 27 expected feature names |
-| `numeric_features` | `list[str]` | Same 27 columns (all integer-encoded) |
+| `feature_columns` | `list[str]` | Ordered feature-name schema stored by the notebook output (37 in current run) |
+| `numeric_features` | `list[str]` | Numeric columns persisted alongside the model (37 in current run output) |
 | `target_classes` | `list[int]` | `[0, 1, 2, 3, 4]` |
 | `feature_engineering_class` | `type` | `TabularFeatures` |
 | `sentiment_approach` | `str` | `"VADER"` |
