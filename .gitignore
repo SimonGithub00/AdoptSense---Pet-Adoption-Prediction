@@ -21,8 +21,8 @@ __pycache__/
 # ===============================
 # Model artifacts
 # ===============================
-src/model/*
-!src/model/.gitkeep
+#src/model/*
+#!src/model/.gitkeep
 
 # ===============================
 # Jupyter

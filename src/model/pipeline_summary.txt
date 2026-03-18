@@ -1,0 +1,12 @@
+AdoptSense Pet Adoption Prediction Pipeline
+==================================================
+
+Model: XGBoost Classifier (Multi-class)
+Training Date: 2026-03-12 00:19:18
+Validation Accuracy: 0.3931
+Validation Weighted F1: 0.3809
+
+Feature Count: 37
+Numeric Features: 37
+Sentiment Approach: VADER
+Target Classes: [0, 1, 2, 3, 4]
