@@ -322,14 +322,14 @@ source .venv/bin/activate
 .\.venv\Scripts\Activate.ps1
 ```
 
-**3. Install dependencies**
+**3. Install dependencies (both backend and frontend)**
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**4. Run the notebook**
+**4. Run the notebook (optional)**
 
 ```bash
 jupyter notebook src/petadoption_run.ipynb
@@ -337,7 +337,7 @@ jupyter notebook src/petadoption_run.ipynb
 
 Run all cells top to bottom. The pipeline pickle is written to `src/model/` at Section 4.
 
-**5. Launch the frontend** (optional)
+**5. Launch the frontend**
 
 ```bash
 streamlit run frontend/app.py
