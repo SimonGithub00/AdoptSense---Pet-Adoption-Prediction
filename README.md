@@ -337,7 +337,7 @@ jupyter notebook src/petadoption_run.ipynb
 
 Run all cells top to bottom. The pipeline pickle is written to `src/model/` at Section 4.
 
-**5. Launch the frontend**
+**5. Launch the frontend to test pre-trained model**
 
 ```bash
 streamlit run frontend/app.py
