@@ -301,7 +301,7 @@ The `train_sentiment/` directory is needed for the Google NLP JSON analytical se
 **1. Clone and open**
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/SimonGithub00/AdoptSense-Pet-Adoption-Prediction.git
 cd AdoptSense-Pet-Adoption-Prediction
 code .
 ```
