@@ -329,7 +329,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**4. Run the notebook (optional)**
+**4. Run the notebook (optional as model will be retrained)**
 
 ```bash
 jupyter notebook src/petadoption_run.ipynb
