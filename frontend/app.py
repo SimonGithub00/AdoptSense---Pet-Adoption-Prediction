@@ -18,6 +18,7 @@ import streamlit as st
 
 from frontend.utils.predictions import AdoptionPredictor, make_prediction
 from frontend.utils.recommendations import get_adoption_factors, get_description_sentiment
+from frontend.utils.matching_platform_ui import show_matching_platform
 
 # Page configuration
 st.set_page_config(
@@ -143,10 +144,11 @@ def main():
     st.markdown("---")
 
     # Navigation
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Home",
         "📁 Batch Upload (CSV)",
         "📝 Single Pet Form",
+        "🤝 Marketplace",
         "ℹ️ About"
     ])
 
@@ -160,6 +162,9 @@ def main():
         show_manual_form()
 
     with tab4:
+        show_matching_platform()
+
+    with tab5:
         show_about()
 
 
@@ -170,7 +175,7 @@ def show_home():
     ## Welcome to AdoptSense 👋
 
     **AdoptSense** is an AI-powered pet adoption speed predictor powered by advanced machine learning.
-    We analyze 27 key pet characteristics to forecast adoption timelines and provide data-driven
+    The model analyzes 27 key pet characteristics to forecast adoption timelines and provide data-driven
     recommendations to help pets find loving homes faster.
 
     ### Who is this for?
@@ -348,7 +353,7 @@ def show_csv_upload():
                     <div class="loading-container">
                         <div class="loading-paws">🐾</div>
                         <div class="loading-text">Analyzing Pets...</div>
-                        <p>Our XGBoost model is evaluating adoption factors...</p>
+                        <p>The XGBoost model is evaluating adoption factors...</p>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -1016,7 +1021,7 @@ def show_about():
     ## 🎯 Mission
 
     **AdoptSense** accelerates pet adoptions by providing data-driven insights to animal
-    shelters, rescue organizations, and pet owners. Our machine learning model predicts
+    shelters, rescue organizations, and pet owners. The machine learning model predicts
     adoption timelines and identifies key improvement factors to help pets find homes faster.
 
     ## 🤖 ML Model: XGBoost Classifier
@@ -1049,7 +1054,7 @@ def show_about():
 
     ## 🔄 Model Comparison & Selection
 
-    We systematically compared **XGBoost vs Random Forest** to select the best production model.
+    The project systematically compares **XGBoost vs Random Forest** to select the best production model.
     Both were trained with identical hyperparameters (300 estimators, max_depth=6) on the same
     27-feature (tabular + VADER) dataset.
     
@@ -1068,7 +1073,7 @@ def show_about():
 
     ## 🛠️ Sentiment Feature Selection
 
-    We evaluated two sentiment enrichment strategies for the final pipeline:
+    Two sentiment enrichment strategies were evaluated for the final pipeline:
 
     | Approach | Features | Accuracy | Macro F1 | Deployable? | Selected? |
     |----------|----------|----------|----------|-----------|-----------|

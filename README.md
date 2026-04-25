@@ -1,6 +1,6 @@
-# AdoptSense — Pet Adoption Speed Prediction
+# AdoptSense — Pet Adoption Speed Prediction & Marketplace
 
-End-to-end machine learning pipeline predicting how quickly a pet listed on PetFinder will be adopted (same day to never), built on the Kaggle PetFinder.my dataset. The trained pipeline powers a Streamlit frontend for live predictions.
+End-to-end machine learning platform combining XGBoost adoption speed prediction with a two-sided pet adoption marketplace. Built on the Kaggle PetFinder.my dataset, it powers a Streamlit frontend featuring prediction analytics, KPI tracking, and role-based marketplace for shelters, private owners, and adopters.
 
 ---
 
@@ -11,13 +11,16 @@ End-to-end machine learning pipeline predicting how quickly a pet listed on PetF
 - [Model](#model)
 - [Feature Engineering](#feature-engineering)
 - [Sentiment Analysis](#sentiment-analysis)
+- [Marketplace Platform](#marketplace-platform)
+- [KPI System](#kpi-system)
 - [Notebook Structure](#notebook-structure)
 - [Source Modules](#source-modules)
+- [Frontend Features](#frontend-features)
 - [Pipeline Artifact](#pipeline-artifact)
 - [Project Structure](#project-structure)
 - [Data Setup](#data-setup)
 - [Setup and Installation](#setup-and-installation)
-- [Running the Notebook](#running-the-notebook)
+- [Running the Application](#running-the-application)
 
 ---
 
@@ -144,6 +147,335 @@ VADER was selected by Macro F1 in that comparison and for the deployment practic
 
 ---
 
+## Marketplace Platform
+
+### Overview
+
+AdoptSense now includes a **complete two-sided pet adoption marketplace** with role-based interfaces for three user types:
+
+| User Type | Role | Key Features |
+|-----------|------|--------------|
+| **Adopters** 🐕 | Pet seekers | Browse, filter, save to watchlist, message sellers |
+| **Shelters** 🏥 | Organizations | Manage inventory, create listings, view KPIs & analytics |
+| **Private Owners** 👨‍👩‍👧 | Individuals | List personal pets, track adoption, get recommendations |
+
+### Architecture
+
+```
+AdoptSense Platform (Unified)
+    ├─ Prediction Engine
+    │   └─ XGBoost + Feature Engineering + VADER Sentiment
+    │
+    ├─ Marketplace Tab (5 tabs total)
+    │   ├─ For Adopters:
+    │   │   ├─ Browse Pets (with filters)
+    │   │   ├─ Watchlist (favorites)
+    │   │   ├─ Messages (interface placeholder)
+    │   │   └─ Dashboard (adoption tracking)
+    │   │
+    │   ├─ For Shelters:
+    │   │   ├─ My Listings (inventory management)
+    │   │   ├─ Create Listing (with AI prediction preview)
+    │   │   ├─ KPIs (adoption trends, rates, metrics)
+    │   │   └─ Messages (bulk inquiries)
+    │   │
+    │   └─ For Private Owners:
+    │       ├─ My Listings (personal pets)
+    │       ├─ Create Listing (simplified form)
+    │       ├─ Analytics (performance tracking)
+    │       └─ Watchlist (monitor adoption trends)
+    │
+    └─ KPI Tracking System
+        ├─ Listing-level metrics
+        ├─ Organization-level aggregation
+        └─ Real-time calculation & dashboards
+```
+
+### Marketplace Features
+
+#### 🔍 Pet Discovery
+- **Browse Interface**: Filterable, sortable pet listings
+- **Smart Filters**: Pet type, adoption speed, location
+- **Listing Cards**: Visual adoption speed badges with confidence scores
+- **AI Recommendations**: Suggests high-likelihood matches
+
+#### ➕ Listing Creation
+- **Smart Forms**: Separate forms for shelters vs. private owners
+- **AI Preview**: Get adoption speed prediction before publishing
+- **Recommendations**: AI-driven suggestions to improve adoption (photos, fee, description, etc.)
+- **Photo Support**: Upload multiple pet photos for better visibility
+
+#### 📊 Performance Dashboards
+- **Real-time Metrics**: Views, contacts, matches, adoption time
+- **KPI Charts**: Adoption trends, speed distribution, historical data
+- **Status Tracking**: Monitor listing progress through adoption funnel
+- **Performance Analytics**: Length-of-stay, adoption rates, contact rates
+
+#### ❤️ Watchlist & Favorites
+- **Save Pets**: Add interesting listings to personal watchlist
+- **Quick Actions**: Message sellers, view details, track progress
+- **Status Updates**: Notified when saved pets are adopted
+
+#### 💬 Messaging (Framework Ready)
+- **Direct Communication**: Message interface for adopter-seller interaction
+- **Shelter Bulk Messaging**: Future support for high-volume inquiries
+- **Message History**: Track all communications
+
+### Data Models
+
+Three new utility modules power the marketplace:
+
+**`frontend/utils/matching_platform.py`** - Core Engine
+- `UserProfile`: Manages shelters, owners, adopters with verification
+- `PetListing`: Complete listing with AI predictions & confidence scores
+- `PetMatch`: Compatibility matching between pets and adopters
+- `ListingKPI` & `ShelterKPI`: Performance tracking at listing & org levels
+- `MatchingPlatformDataStore`: In-memory data management (ready for PostgreSQL)
+- `RecommendationEngine`: AI-powered improvement suggestions
+
+**`frontend/utils/matching_platform_ui.py`** - Streamlit Interface
+- `MatchingPlatformUI`: Main class with all UI components
+- Role-based navigation (3 distinct user experiences)
+- Browse, create, manage, and track adoptions
+- Interactive dashboards with Plotly charts
+- Sample data included for testing
+
+### Integration with Prediction Model
+
+The marketplace seamlessly integrates your XGBoost model:
+
+```
+User Creates Listing
+    ↓
+Form Data → TabularFeatures (27 structural + 4 sentiment)
+    ↓
+Sentiment Analysis (VADER)
+    ↓
+XGBoost Prediction (0-4 speed scale)
+    ↓
+Display Adoption Speed + Confidence
+    ↓
+Generate AI Recommendations
+```
+
+**No changes to existing prediction pipeline!** The model is fully compatible.
+
+### Quick Start: Testing the Marketplace
+
+1. **Launch the app:**
+   ```bash
+   streamlit run frontend/app.py
+   ```
+
+2. **Click the "🤝 Marketplace" tab** (it's the 4th tab)
+
+3. **Select your role** (Sidebar):
+   - Adopter: Browse pets
+   - Shelter Manager: Manage inventory
+   - Private Owner: List personal pets
+
+4. **Explore features:**
+   - **Adopter**: Browse 3 sample listings, filter by speed, add to watchlist
+   - **Shelter**: See listing management, create new with AI preview, view KPIs
+   - **Owner**: Same as shelter but optimized for individuals
+
+### Future Marketplace Features (Roadmap)
+
+**Phase 3: Production Infrastructure**
+- [ ] Database persistence (PostgreSQL)
+- [ ] User authentication & registration
+- [ ] Geographic features (maps, location-based discovery)
+- [ ] Photo upload & storage (AWS S3)
+
+**Phase 4: Advanced Features**
+- [ ] Real messaging system
+- [ ] Photo enhancement AI (professional backgrounds, filters)
+- [ ] Digital stickers (shareable pet avatars)
+- [ ] Weekly shelter reports (email summaries)
+
+**Phase 5: Revenue Streams**
+- [ ] Listing prioritization (paid feature)
+- [ ] Featured listings (premium placement)
+- [ ] Partner advertising network
+- [ ] Premium analytics reports
+
+---
+
+## KPI System
+
+### Overview
+
+The matching platform tracks comprehensive business metrics at both listing and organizational levels to measure adoption sustainability and platform success.
+
+### Main KPIs Implemented
+
+✅ **Listing-Level Metrics**
+- **Views**: Number of times a listing was viewed
+- **Contacts**: How many interested adopters reached out
+- **Matches**: AI-generated compatibility scores
+- **Adoption Time**: Days from listing creation to adoption
+- **Contact Rate**: (Contacts / Views) × 100%
+
+✅ **Organization-Level Metrics**
+- **Total Listings**: All pets ever listed by organization
+- **Active Listings**: Currently available for adoption
+- **Adopted Count**: Successfully adopted pets
+- **Adoption Rate**: (Adopted / Total) × 100%
+- **Average Adoption Speed**: Mean adoption speed (0-4 scale)
+- **Average Length-of-Stay**: Average days in shelter before adoption
+- **Average Views Per Listing**: Total engagement metric
+- **Contact Rate**: Organization-wide interest metric
+- **Reinsertion Rate**: % of pets re-entering after adoption (framework)
+- **User Satisfaction**: Average Likert scale feedback 1-5 (framework)
+
+### KPI Calculation Logic
+
+#### When a Listing is Created
+```python
+PetListing created with:
+  - adoption_speed_pred: AI prediction (0-4)
+  - adoption_speed_confidence: Model confidence (0-1)
+  - created_at: timestamp
+
+ListingKPI initialized:
+  - views: 0
+  - contacts: 0
+  - adoption_time_days: None (null until adopted)
+```
+
+#### During Listing Lifecycle
+```python
+# Each view increments counter
+listing_kpi.views += 1
+listing_kpi.last_view_at = now
+
+# Each contact increments counter
+listing_kpi.contacts += 1
+
+# AI can generate matches
+listing_kpi.matches += 1
+```
+
+#### When Pet is Adopted
+```python
+# Record adoption with actual speed
+datastore.record_adoption(
+    listing_id="unique_id",
+    adoption_speed_actual=1  # How fast it actually adopted
+)
+
+# Automatic calculations:
+adoption_days = (adopted_date - created_date).days
+listing_kpi.adoption_time_days = adoption_days
+
+# Organization KPIs auto-updated:
+shelter_kpi.adopted_count += 1
+shelter_kpi.active_listings -= 1
+
+# Recalculate all averages:
+avg_los = sum(adoption_days) / count(adoptions)
+avg_speed = sum(adoption_speeds) / count(adoptions)
+adoption_rate = adopted_count / total_listings
+```
+
+### Example: End-to-End KPI Tracking
+
+```
+Day 0: Shelter lists "Max" (dog, 12mo, $50, 4 photos)
+  ├─ Prediction: Speed 0 (same day), confidence 85%
+  └─ KPI: total_listings=1, active_listings=1
+
+Days 1-5: Adopters browse marketplace
+  ├─ Day 1: 5 views → listing_kpi.views=5
+  ├─ Day 2: 2 views, 1 contact → views=7, contacts=1
+  ├─ Day 3: 3 views, 2 contacts → views=10, contacts=3
+  └─ Day 5: 1 view, 1 match → views=11, matches=1
+
+Day 6: Pet is adopted
+  ├─ Status: ADOPTED
+  ├─ Adoption time: 6 days
+  ├─ Actual speed: 0 (matched prediction!) ✓
+  │
+  └─ Final KPIs:
+      ├─ Listing: views=11, contacts=3 (27% contact rate), adoption_time=6
+      ├─ Shelter: adopted=1, adoption_rate=100%, avg_los=6 days
+      └─ Prediction Accuracy: Predicted=0, Actual=0 → Perfect!
+```
+
+### Dashboard Display
+
+The KPI dashboard shows:
+- **Summary Cards**: Key metrics at a glance (total, adopted, adoption rate, avg LOS)
+- **Adoption Timeline**: 30-day trend chart showing daily adoption rate
+- **Speed Distribution**: Histogram of adoption speeds across all listings
+- **Detailed Stats Table**: Breakdowns of each metric
+- **Expandable Details**: Click to drill into specific metrics
+
+### Integration with Business Logic
+
+**Metrics Inform Pricing:**
+- Organizations with low contact rates → Recommend paid photo enhancement
+- Organizations with high adoption rates → Unlock premium features or discounts
+- Long average LOS → Recommend paid listing prioritization
+- High adoption success → Performance bonus on next listing
+
+### Future Enhancements
+
+**Reinsertion Rate Tracking** (Phase 2)
+```python
+Track when pets re-enter system after adoption:
+- Track reason: returned, lost, owner change, etc.
+- Days in household before reinsertion
+- Correlation with adoption speed
+```
+
+**User Satisfaction** (Phase 2)
+```python
+Post-adoption feedback (Likert 1-5):
+- Adopter satisfaction with pet match
+- Pet health/happiness after adoption
+- Would recommend platform? Yes/No
+- Calculate avg_satisfaction and recommendation_rate
+```
+
+### Database Schema (Ready to Implement)
+
+```sql
+CREATE TABLE listings (
+    listing_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    pet_name TEXT NOT NULL,
+    adoption_speed_pred INT,
+    adoption_speed_confidence FLOAT,
+    status VARCHAR(20),
+    created_at TIMESTAMP,
+    adopted_at TIMESTAMP,
+    adoption_speed_actual INT
+);
+
+CREATE TABLE listing_kpis (
+    listing_id TEXT PRIMARY KEY,
+    views INT DEFAULT 0,
+    contacts INT DEFAULT 0,
+    matches INT DEFAULT 0,
+    adoption_time_days INT,
+    last_view_at TIMESTAMP
+);
+
+CREATE TABLE shelter_kpis (
+    user_id TEXT PRIMARY KEY,
+    total_listings INT,
+    adopted_count INT,
+    avg_adoption_speed FLOAT,
+    avg_length_of_stay_days FLOAT,
+    adoption_rate FLOAT,
+    contact_rate FLOAT,
+    updated_at TIMESTAMP
+);
+```
+
+---
+
 ## Notebook Structure
 
 `src/petadoption_run.ipynb`
@@ -205,6 +537,61 @@ Stub module reserved for future transformer-based or TF-IDF text features. Curre
 
 Stub module reserved for image quality or metadata features (CNNs, image scoring). Not used in the current pipeline.
 
+### `frontend/utils/matching_platform.py`
+
+Core marketplace engine with data models:
+- `UserProfile`: User account management
+- `PetListing`: Pet listings with predictions
+- `ListingKPI` & `ShelterKPI`: KPI tracking
+- `MatchingPlatformDataStore`: Data management
+- `RecommendationEngine`: AI suggestions
+
+### `frontend/utils/matching_platform_ui.py`
+
+Streamlit UI components:
+- `MatchingPlatformUI`: Main UI class
+- Browse interface with filters
+- Listing creation forms
+- KPI dashboards
+- Watchlist management
+- Role-based navigation
+
+---
+
+## Frontend Features
+
+The Streamlit application now includes 5 tabs:
+
+| Tab | Purpose | Audience |
+|-----|---------|----------|
+| 📊 Home | Landing page & feature overview | All users |
+| 📁 Batch Upload | Predict speeds for multiple pets via CSV | Shelters, analysts |
+| 📝 Single Pet Form | Single pet prediction & recommendations | Individuals |
+| 🤝 **Marketplace** | Two-sided marketplace for adoption | All users |
+| ℹ️ About | Project documentation & methodology | All users |
+
+### Tab: 🤝 Marketplace
+
+**For Adopters:**
+- Browse available pets with smart filters
+- Filter by pet type (dogs/cats) and adoption speed
+- Save favorites to watchlist
+- Send messages to sellers
+- Track adoption progress
+
+**For Shelters:**
+- View and manage pet inventory
+- Create new listings with AI prediction preview
+- See actionable recommendations to improve adoption
+- Monitor KPI dashboard (adoption trends, rates, metrics)
+- Respond to adoption inquiries
+
+**For Private Owners:**
+- List personal pets with same AI analysis
+- Get recommendations to improve adoption chances
+- Track individual listing performance
+- Monitor adoption progress
+
 ---
 
 ## Pipeline Artifact
@@ -239,7 +626,7 @@ A human-readable summary is also written to `src/model/pipeline_summary.txt`.
 
 ```
 AdoptSense-Pet-Adoption-Prediction/
-├── README.md
+├── README.md                        # This file - comprehensive documentation
 ├── requirements.txt
 ├── LICENSE
 ├── data/                            # gitignored — Kaggle files stay local
@@ -247,7 +634,7 @@ AdoptSense-Pet-Adoption-Prediction/
 │   │   ├── train.csv                # 14,993 labelled pet listings
 │   │   ├── train_images/
 │   │   ├── train_metadata/
-│   │   └── train_sentiment/         # Google NLP JSON files (one per PetID)
+│   │   └── train_sentiment/         # Google NLP JSON files
 │   ├── test/                        # no AdoptionSpeed labels — not used for eval
 │   ├── breed_labels.csv
 │   ├── color_labels.csv
@@ -257,18 +644,23 @@ AdoptSense-Pet-Adoption-Prediction/
 │   ├── features_tabular.py          # TabularFeatures + VADER sentiment
 │   ├── features_sentiment.py        # SentimentFeatures (Google NLP JSON)
 │   ├── features_text.py             # Stub for future text features
-│   ├── features_image_meta.py       # Stub for future image/metadata features
+│   ├── features_image_meta.py       # Stub for future image features
 │   ├── petadoption_run.ipynb        # Full analytical and training notebook
 │   └── model/
 │       ├── petadoption_pipeline.pkl # Saved pipeline (scaler + XGBoost)
 │       └── pipeline_summary.txt     # Human-readable pipeline metadata
 └── frontend/
-    ├── app.py                       # Streamlit application
+    ├── app.py                       # Streamlit application (5 tabs)
     ├── requirements.txt
+    ├── run_app.bat
+    ├── run_app.sh
+    ├── assets/                      # Static assets
     └── utils/
-        ├── predictions.py           # AdoptionPredictor, feature alignment
         ├── model_loader.py          # Singleton pipeline loader
-        └── recommendations.py       # Rule-based adoption factor analysis
+        ├── predictions.py           # AdoptionPredictor, feature alignment
+        ├── recommendations.py       # Rule-based adoption factor analysis
+        ├── matching_platform.py     # Marketplace core engine ← NEW
+        └── matching_platform_ui.py  # Marketplace Streamlit UI ← NEW
 ```
 
 ---
@@ -301,7 +693,7 @@ The `train_sentiment/` directory is needed for the Google NLP JSON analytical se
 **1. Clone and open**
 
 ```bash
-git clone https://github.com/SimonGithub00/AdoptSense-Pet-Adoption-Prediction.git
+git clone https://github.com/<your-username>/AdoptSense-Pet-Adoption-Prediction.git
 cd AdoptSense-Pet-Adoption-Prediction
 code .
 ```
@@ -337,11 +729,130 @@ jupyter notebook src/petadoption_run.ipynb
 
 Run all cells top to bottom. The pipeline pickle is written to `src/model/` at Section 4.
 
-**5. Launch the frontend to test pre-trained model**
+**5. Launch the Streamlit application**
 
 ```bash
 streamlit run frontend/app.py
 ```
 
+The application opens in your default browser with 5 tabs:
+- **📊 Home**: Feature overview and adoption speed categories
+- **📁 Batch Upload**: CSV prediction for multiple pets
+- **📝 Single Pet Form**: Individual pet prediction & recommendations
+- **🤝 Marketplace**: Two-sided adoption platform
+- **ℹ️ About**: Project documentation
 
-> Do not commit anything under `data/`. If `requirements.txt` changes, re-run `pip install -r requirements.txt`.
+---
+
+## Using the Marketplace
+
+### Getting Started
+
+1. Click the **"🤝 Marketplace"** tab in the Streamlit app
+2. Select your role in the sidebar (Adopter, Shelter Manager, or Private Owner)
+3. Choose the corresponding tab to explore features for your role
+
+### For Adopters 🐕
+
+1. Go to **"🔍 Browse Pets"**
+2. Filter by pet type (dogs/cats) and adoption speed
+3. Sort results by preference
+4. Click **"❤️ Save"** to add to watchlist
+5. Click **"💬 Message"** to contact the seller
+6. Visit **"❤️ Watchlist"** to manage saved pets
+
+### For Shelters 🏥
+
+1. Go to **"📋 My Listings"** to see your inventory
+2. Go to **"➕ Create Listing"** to add new pets:
+   - Fill in pet details (name, age, health status, etc.)
+   - Upload photos
+   - Get AI adoption speed prediction before publishing
+   - Read recommendations to optimize listing
+3. Go to **"📊 KPIs"** to view analytics:
+   - Adoption trends (30-day chart)
+   - Speed distribution (histogram)
+   - Key metrics (adoption rate, length-of-stay, etc.)
+   - Mark pets as adopted to update metrics
+
+### For Private Owners 👨‍👩‍👧
+
+Same features as shelters but optimized for individual pet listings:
+- Simplified form for 1-few pets
+- Personal adoption story emphasis
+- Individual listing performance tracking
+
+### Sample Data
+
+The marketplace includes 3 demo listings:
+- **Max** (Dog) - Speed 0 (⭐⭐⭐⭐⭐ Same day)
+- **Whiskers** (Cat) - Speed 1 (⭐⭐⭐⭐ 1-7 days)
+- **Luna** (Cat) - Speed 3 (⭐⭐ 31-90 days)
+
+Test different filters to see how the search and discovery works!
+
+---
+
+## Technical Architecture
+
+### Current Implementation
+
+- **Backend**: XGBoost model with feature engineering
+- **Database**: In-memory Python dicts (demo)
+- **Frontend**: Streamlit with 5 tabs
+- **AI Integration**: Real-time predictions on listing creation
+- **KPI Tracking**: Session-based calculation ready for persistence
+
+### Production Ready for:
+
+- **Testing**: MVP with complete feature set
+- **User feedback**: All core functionality works
+- **Scaling**: Architecture supports PostgreSQL migration
+- **Feature expansion**: Clear extension points for advanced features
+
+### Next Steps for Production
+
+1. **Database**: Implement PostgreSQL persistence (schema provided in README)
+2. **Auth**: Add user registration and authentication
+3. **Storage**: Connect AWS S3 for photo uploads
+4. **Messaging**: Implement real message queue system
+5. **Deployment**: Host on cloud platform (AWS, GCP, Azure)
+6. **Monitoring**: Add analytics and error tracking
+
+---
+
+## Notes
+
+> - Do not commit anything under `data/`. 
+> - If `requirements.txt` changes, re-run `pip install -r requirements.txt`.
+> - All marketplace features are integrated into the single Streamlit app (no external services required).
+> - Sample data resets on app refresh (no persistence until database is added).
+> - The marketplace is fully functional but designed for MVP testing before production deployment.
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## References
+
+- **Dataset:** [PetFinder.my Kaggle Competition](https://www.kaggle.com/c/petfinder-adoption-prediction)
+- **ML Framework:** XGBoost, scikit-learn
+- **Sentiment Analysis:** NLTK VADER + Google Cloud NLP (analytical only)
+- **Frontend:** Streamlit, Plotly
+- **Deployment:** Python pickle serialization (production ready)
+
+---
+
+## Public Repository Checklist
+
+Before publishing, verify the following:
+
+- No personal identifiers are present in documentation, notebook outputs, or logs.
+- No secrets are present in tracked files (`.env`, API keys, tokens, credentials).
+- Large local artifacts are excluded from git (`data/`, `.venv/`, caches, temporary files).
+- Notebook outputs are cleared if they include local absolute paths or machine-specific details.
+- The project README and license are generic and portfolio-ready.

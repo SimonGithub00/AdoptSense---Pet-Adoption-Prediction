@@ -24,6 +24,10 @@ __pycache__/
 #src/model/*
 #!src/model/.gitkeep
 
+# Optional local model files (uncomment if you don't want binary artifacts in git)
+# *.pkl
+# *.joblib
+
 # ===============================
 # Jupyter
 # ===============================
@@ -36,3 +40,76 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+# ===============================
+# Secrets and local config
+# ===============================
+.env
+.env.*
+*.env
+secrets.*
+config.secret*
+.aws/
+.gcp/
+credentials*
+token*
+
+# ===============================
+# API keys and authentication
+# ===============================
+api_key*
+apikey*
+auth_token*
+password*
+.streamlit/secrets.toml
+streamlit_config*
+
+# ===============================
+# Sensitive user data
+# ===============================
+*.key
+*.pem
+id_rsa*
+.ssh/
+config.secret*
+.aws/
+.gcp/
+credentials*
+token*
+
+# ===============================
+# API keys and authentication
+# ===============================
+api_key*
+apikey*
+auth_token*
+password*
+.streamlit/secrets.toml
+streamlitconfig*
+
+# ===============================
+# Local development artifacts
+# ===============================
+*.log
+*.tmp
+.DS_Store
+local_*
+debug_*
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.streamlit/secrets.toml
+secrets.toml
+*.secret
+*.credentials
+*.token
+*.pem
+*.key
+
+# ===============================
+# Logs and temporary files
+# ===============================
+*.log
+*.tmp
+*.temp
